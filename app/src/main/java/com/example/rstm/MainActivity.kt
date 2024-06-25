@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
             RSTMTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "Android",
+                        name = "RS & TM Project",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
