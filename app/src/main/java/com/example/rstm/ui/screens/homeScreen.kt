@@ -12,12 +12,10 @@ import androidx.navigation.compose.rememberNavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(modifier: Modifier) {
+fun HomeScreen(modifier: Modifier,navController:NavController) {
     Column(modifier){
-        val navController = rememberNavController()
         TopAppBar(title = { Text(text = "RSTM"    )})
         Button(onClick = {
-            accActivity()
             navController.navigate("accelerometer")
                          },) {
             Text(text = "Accelerometer Screen")
