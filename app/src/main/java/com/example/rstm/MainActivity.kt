@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.rstm.ui.screens.HomeScreen
 import com.example.rstm.ui.screens.gyroscopeScreen
+import com.example.rstm.ui.screens.magFieldScreen
 import com.example.rstm.ui.theme.RSTMTheme
 
 class MainActivity : ComponentActivity() {
@@ -37,7 +38,7 @@ class MainActivity : ComponentActivity() {
     var y1 = mutableStateOf(0f)
     var z1 = mutableStateOf(0f)
 
-    var magneticField: Sensor? = null
+    var magField: Sensor? = null
     var x2 = mutableStateOf(0f)
     var y2 = mutableStateOf(0f)
     var z2 = mutableStateOf(0f)
@@ -78,7 +79,7 @@ class MainActivity : ComponentActivity() {
     private val magfieldEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             if (event != null) {
-                if (event.sensor.type == Sensor.TYPE_GYROSCOPE) {
+                if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
                     x2.value = event.values[0]
                     y2.value = event.values[1]
                     z2.value = event.values[2]
@@ -101,6 +102,7 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, "Accelerometer is not available", Toast.LENGTH_SHORT).show()
         }
         gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
         enableEdgeToEdge()
            setContent {
             val navController = rememberNavController()
@@ -116,6 +118,9 @@ class MainActivity : ComponentActivity() {
                         composable("gyro"){
                             gyroscopeScreen(modifier = Modifier.padding(innerPadding), gyro = gyroscope, x = x1, y = y1, z = z1)
                         }
+                        composable("magField"){
+                            magFieldScreen(modifier = Modifier.padding(innerPadding), magField = magField, x = x2, y = y2, z = z2)
+                        }
                     }
                 }
             }
@@ -129,16 +134,21 @@ class MainActivity : ComponentActivity() {
             SensorManager.SENSOR_DELAY_NORMAL
         )
         sensorManager.registerListener(
-            this.gyroEventListener,
+            gyroEventListener,
             gyroscope,
             SensorManager.SENSOR_DELAY_NORMAL
-
+        )
+        sensorManager.registerListener(
+            magfieldEventListener,
+            magField,
+            SensorManager.SENSOR_DELAY_NORMAL
         )
     }
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(accEventListener)
-        sensorManager.unregisterListener(this.gyroEventListener)
+        sensorManager.unregisterListener(gyroEventListener)
+        sensorManager.unregisterListener(magfieldEventListener)
     }
 }
 

@@ -25,5 +25,10 @@ fun HomeScreen(modifier: Modifier,navController:NavController) {
         },) {
             Text(text = "Gyroscope Screen")
         }
+        Button(onClick = {
+            navController.navigate("magField")
+        },) {
+            Text(text = "Magnetic Field/Compass")
+        }
     }
 }
