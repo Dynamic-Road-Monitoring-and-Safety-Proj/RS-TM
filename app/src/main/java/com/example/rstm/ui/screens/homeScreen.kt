@@ -20,6 +20,10 @@ fun HomeScreen(modifier: Modifier,navController:NavController) {
                          },) {
             Text(text = "Accelerometer Screen")
         }
+        Button(onClick = {
+            navController.navigate("gyro")
+        },) {
+            Text(text = "Gyroscope Screen")
+        }
     }
-
 }

@@ -1,3 +1,5 @@
+package com.example.rstm.ui.screens
+
 import android.hardware.Sensor
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -7,19 +9,19 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 
 @Composable
-fun AccelerometerScreen(
+fun gyroscopeScreen(
     modifier: Modifier,
-    accelerometer: Sensor?,
+    gyro: Sensor?,
     x: MutableState<Float>,
     y: MutableState<Float>,
     z: MutableState<Float>
 ) {
     Column(modifier) {
-        Text(text = "Accelerometer Screen", modifier = modifier.fillMaxWidth())
-        if (accelerometer != null) {
-            Text(text = "Accelerometer is available")
+        Text(text = "Gyroscope Screen", modifier = modifier.fillMaxWidth())
+        if (gyro != null) {
+            Text(text = "Gyroscope is available")
         } else {
-            Text(text = "Accelerometer is not available")
+            Text(text = "Gyroscope is not available")
         }
         Text(text = "x: ${x.value}")
         Text(text = "y: ${y.value}")
