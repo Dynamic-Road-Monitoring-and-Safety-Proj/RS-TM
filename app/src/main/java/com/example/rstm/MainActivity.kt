@@ -23,6 +23,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.rstm.ui.screens.HomeScreen
 import com.example.rstm.ui.screens.gyroscopeScreen
+import com.example.rstm.ui.screens.lightScreen
+import com.example.rstm.ui.screens.lightScreenComp
 import com.example.rstm.ui.screens.magFieldScreen
 import com.example.rstm.ui.theme.RSTMTheme
 
@@ -60,6 +62,7 @@ class MainActivity : ComponentActivity() {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         }
     }
+
     private val gyroEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             if (event != null) {
@@ -76,7 +79,7 @@ class MainActivity : ComponentActivity() {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         }
     }
-    private val magfieldEventListener = object : SensorEventListener {
+    private val magFieldEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             if (event != null) {
                 if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
@@ -121,6 +124,9 @@ class MainActivity : ComponentActivity() {
                         composable("magField"){
                             magFieldScreen(modifier = Modifier.padding(innerPadding), magField = magField, x = x2, y = y2, z = z2)
                         }
+                        composable("lightScreen"){
+                            lightScreenComp(modifier = Modifier.padding(innerPadding))
+                        }
                     }
                 }
             }
@@ -139,7 +145,7 @@ class MainActivity : ComponentActivity() {
             SensorManager.SENSOR_DELAY_NORMAL
         )
         sensorManager.registerListener(
-            magfieldEventListener,
+            magFieldEventListener,
             magField,
             SensorManager.SENSOR_DELAY_NORMAL
         )
@@ -148,7 +154,10 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         sensorManager.unregisterListener(accEventListener)
         sensorManager.unregisterListener(gyroEventListener)
-        sensorManager.unregisterListener(magfieldEventListener)
+        sensorManager.unregisterListener(magFieldEventListener)
+    }
+    fun getSensorManager(): SensorManager {
+        return sensorManager
     }
 }
 
