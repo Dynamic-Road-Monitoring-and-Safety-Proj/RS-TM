@@ -4,15 +4,22 @@ package com.example.rstm
 import AccelerometerScreen
 import GyroscopeScreen
 import LightScreenComp
+import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.location.Location
+import android.location.LocationRequest
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -20,14 +27,45 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.rstm.ui.screens.HomeScreen
+import com.example.rstm.ui.screens.LocationScreen
 import com.example.rstm.ui.screens.magFieldScreen
 import com.example.rstm.ui.theme.RSTMTheme
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationServices
 
 class MainActivity : ComponentActivity() {
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationRequest: LocationRequest
+    private lateinit var locationCallback: LocationCallback
+    private var currentLocation: Location? = null
+
+    private val locationPermission = android.Manifest.permission.ACCESS_FINE_LOCATION
+    private val requestPermissionLauncher: ActivityResultLauncher<String> =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Permission is required to access Music Files, Enable it in device settings", Toast.LENGTH_SHORT).show()
+            }
+        }
+    private fun checkPermission() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                locationPermission
+            ) == PackageManager.PERMISSION_DENIED
+        ) {
+            requestPermissionLauncher.launch(locationPermission)
+        } else {
+            Toast.makeText(this, "Welcome", Toast.LENGTH_SHORT).show()  // just for testing when permission granted
+        }
+    }
+    //TODO MAKE ABOVE LOCATION PART MODULAR after sensors are done
     private lateinit var sensorManager: SensorManager
     var accelerometer: Sensor? = null
     var x = mutableStateOf(0f)
@@ -75,6 +113,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        checkPermission()
         Toast.makeText(this, "Accelerometer Activity", Toast.LENGTH_SHORT).show()
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -102,6 +143,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("lightScreen"){
                             LightScreenComp(modifier = Modifier.padding(innerPadding), sensorManager)
+                        }
+                        composable("locationScreen"){
+                            LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
                         }
                     }
                 }

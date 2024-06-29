@@ -35,5 +35,10 @@ fun HomeScreen(modifier: Modifier,navController:NavController) {
         },) {
             Text(text = "Environment Light")
         }
+        Button(onClick = {
+            navController.navigate("locationScreen")
+        },) {
+            Text(text = "Location*-")
+        }
     }
 }
