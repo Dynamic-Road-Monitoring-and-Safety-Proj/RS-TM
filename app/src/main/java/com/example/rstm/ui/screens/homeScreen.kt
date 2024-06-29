@@ -30,5 +30,10 @@ fun HomeScreen(modifier: Modifier,navController:NavController) {
         },) {
             Text(text = "Magnetic Field/Compass")
         }
+        Button(onClick = {
+            navController.navigate("lightScreen")
+        },) {
+            Text(text = "Environment Light")
+        }
     }
 }

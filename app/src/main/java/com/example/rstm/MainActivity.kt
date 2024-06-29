@@ -2,6 +2,8 @@ package com.example.rstm
 
 
 import AccelerometerScreen
+import GyroscopeScreen
+import LightScreenComp
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -22,7 +24,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.rstm.ui.screens.HomeScreen
-import com.example.rstm.ui.screens.gyroscopeScreen
 import com.example.rstm.ui.screens.magFieldScreen
 import com.example.rstm.ui.theme.RSTMTheme
 
@@ -32,11 +33,6 @@ class MainActivity : ComponentActivity() {
     var x = mutableStateOf(0f)
     var y = mutableStateOf(0f)
     var z = mutableStateOf(0f)
-
-    var gyroscope: Sensor? = null
-    var x1 = mutableStateOf(0f)
-    var y1 = mutableStateOf(0f)
-    var z1 = mutableStateOf(0f)
 
     var magField: Sensor? = null
     var x2 = mutableStateOf(0f)
@@ -60,23 +56,7 @@ class MainActivity : ComponentActivity() {
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         }
     }
-    private val gyroEventListener = object : SensorEventListener {
-        override fun onSensorChanged(event: SensorEvent?) {
-            if (event != null) {
-                if (event.sensor.type == Sensor.TYPE_GYROSCOPE) {
-                    x1.value = event.values[0]
-                    y1.value = event.values[1]
-                    z1.value = event.values[2]
-//                    values[0]: Angular speed around the x-axis
-//                    values[1]: Angular speed around the y-axis
-//                    values[2]: Angular speed around the z-axis
-                }
-            }
-        }
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        }
-    }
-    private val magfieldEventListener = object : SensorEventListener {
+    private val magFieldEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             if (event != null) {
                 if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
@@ -101,7 +81,6 @@ class MainActivity : ComponentActivity() {
         if (accelerometer == null){
             Toast.makeText(this, "Accelerometer is not available", Toast.LENGTH_SHORT).show()
         }
-        gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
         magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
         enableEdgeToEdge()
            setContent {
@@ -116,10 +95,13 @@ class MainActivity : ComponentActivity() {
                             AccelerometerScreen(Modifier.padding(innerPadding), accelerometer, x, y, z)//
                         }
                         composable("gyro"){
-                            gyroscopeScreen(modifier = Modifier.padding(innerPadding), gyro = gyroscope, x = x1, y = y1, z = z1)
+                            GyroscopeScreen(modifier = Modifier.padding(innerPadding),sensorManager)
                         }
                         composable("magField"){
                             magFieldScreen(modifier = Modifier.padding(innerPadding), magField = magField, x = x2, y = y2, z = z2)
+                        }
+                        composable("lightScreen"){
+                            LightScreenComp(modifier = Modifier.padding(innerPadding), sensorManager)
                         }
                     }
                 }
@@ -134,12 +116,7 @@ class MainActivity : ComponentActivity() {
             SensorManager.SENSOR_DELAY_NORMAL
         )
         sensorManager.registerListener(
-            gyroEventListener,
-            gyroscope,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
-        sensorManager.registerListener(
-            magfieldEventListener,
+            magFieldEventListener,
             magField,
             SensorManager.SENSOR_DELAY_NORMAL
         )
@@ -147,8 +124,7 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(accEventListener)
-        sensorManager.unregisterListener(gyroEventListener)
-        sensorManager.unregisterListener(magfieldEventListener)
+        sensorManager.unregisterListener(magFieldEventListener)
     }
 }
 
