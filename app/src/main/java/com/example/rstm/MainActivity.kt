@@ -52,28 +52,30 @@ class MainActivity : ComponentActivity() {
         android.Manifest.permission.RECORD_AUDIO,
         android.Manifest.permission.MANAGE_EXTERNAL_STORAGE
     )
-    private val cameraPermission = android.Manifest.permission.CAMERA
-    private val requestPermissionLauncher: ActivityResultLauncher<String> =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Permission is required to access Music Files, Enable it in device settings", Toast.LENGTH_SHORT).show()
+    private val requestPermissionLauncher: ActivityResultLauncher<Array<String>> =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { PermissionsList ->
+            PermissionsList.entries.forEach{isGranted->
+                if (isGranted.value) {
+                    Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(
+                        this,
+                        "Permission is required to access Sensors and Files, Enable it in device settings",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     @RequiresApi(Build.VERSION_CODES.R)
     private fun checkPermission() {
-        for(i in PermissionArray){
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    i
-                ) == PackageManager.PERMISSION_DENIED
-            ) {
-                requestPermissionLauncher.launch(i)
-            } else {
-                Toast.makeText(this, "$i Permission Granted", Toast.LENGTH_SHORT)
-                    .show()  // just for testing when permission granted
-            }
+        val permissionsToRequest = PermissionArray.filter { permission ->
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED
+        }.toTypedArray()
+
+        if (permissionsToRequest.isNotEmpty()) {
+            requestPermissionLauncher.launch(permissionsToRequest)
+        } else {
+            Toast.makeText(this, "All permissions are already granted", Toast.LENGTH_SHORT).show()
         }
     }
     //TODO MAKE ABOVE LOCATION PART MODULAR after sensors are done
@@ -127,7 +129,6 @@ class MainActivity : ComponentActivity() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         checkPermission()
-        Toast.makeText(this, "Accelerometer Activity", Toast.LENGTH_SHORT).show()
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         if (accelerometer == null){
