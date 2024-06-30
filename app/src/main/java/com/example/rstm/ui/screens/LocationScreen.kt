@@ -39,7 +39,6 @@ fun LocationScreen(modifier: Modifier = Modifier, fusedLocationClient: FusedLoca
             delay(5000)
         }
     }
-
     Column(modifier = modifier.fillMaxWidth()) {
         Text(text = "Location Screen", modifier = modifier)
         currentLocation?.let {

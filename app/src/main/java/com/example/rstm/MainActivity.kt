@@ -4,6 +4,7 @@ package com.example.rstm
 import AccelerometerScreen
 import GyroscopeScreen
 import LightScreenComp
+import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -27,7 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -38,14 +41,18 @@ import com.example.rstm.ui.theme.RSTMTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationServices
+import java.security.Permission
 
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var locationRequest: LocationRequest
-    private lateinit var locationCallback: LocationCallback
-    private var currentLocation: Location? = null
 
-    private val locationPermission = android.Manifest.permission.ACCESS_FINE_LOCATION
+    @RequiresApi(Build.VERSION_CODES.R)
+    private val PermissionArray = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
+        android.Manifest.permission.CAMERA,
+        android.Manifest.permission.RECORD_AUDIO,
+        android.Manifest.permission.MANAGE_EXTERNAL_STORAGE
+    )
+    private val cameraPermission = android.Manifest.permission.CAMERA
     private val requestPermissionLauncher: ActivityResultLauncher<String> =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
@@ -54,15 +61,19 @@ class MainActivity : ComponentActivity() {
                 Toast.makeText(this, "Permission is required to access Music Files, Enable it in device settings", Toast.LENGTH_SHORT).show()
             }
         }
+    @RequiresApi(Build.VERSION_CODES.R)
     private fun checkPermission() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                locationPermission
-            ) == PackageManager.PERMISSION_DENIED
-        ) {
-            requestPermissionLauncher.launch(locationPermission)
-        } else {
-            Toast.makeText(this, "Welcome", Toast.LENGTH_SHORT).show()  // just for testing when permission granted
+        for(i in PermissionArray){
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    i
+                ) == PackageManager.PERMISSION_DENIED
+            ) {
+                requestPermissionLauncher.launch(i)
+            } else {
+                Toast.makeText(this, "$i Permission Granted", Toast.LENGTH_SHORT)
+                    .show()  // just for testing when permission granted
+            }
         }
     }
     //TODO MAKE ABOVE LOCATION PART MODULAR after sensors are done
@@ -109,7 +120,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
@@ -176,6 +187,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DefaultPreview() {
     RSTMTheme {
-//        HomeScreen(Modifier.padding(16.dp))
+//        HomeScreen(Modifier.padding(16.dp), NavController())
     }
 }
