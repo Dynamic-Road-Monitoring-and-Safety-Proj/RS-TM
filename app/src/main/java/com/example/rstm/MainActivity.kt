@@ -47,7 +47,6 @@ import com.google.common.util.concurrent.ListenableFuture
 
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    lateinit var cameraProvider: CameraProvider
 
     @RequiresApi(Build.VERSION_CODES.R)
     private val PermissionArray = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -163,8 +162,7 @@ class MainActivity : ComponentActivity() {
                             LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
                         }
                         composable("cameraScreen"){
-                            startCam()
-                            CameraScreen(cameraProvider)
+                            CameraScreen(this@MainActivity)
                         }
                     }
                 }
@@ -188,17 +186,6 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         sensorManager.unregisterListener(accEventListener)
         sensorManager.unregisterListener(magFieldEventListener)
-    }
-
-    fun startCam(){
-        lateinit var recorder: Recorder
-        val recBuilder = Recorder.Builder()
-        val qualitySelector = QualitySelector.fromOrderedList(
-            listOf(Quality.FHD, Quality.HD, Quality.HIGHEST)
-        )
-
-        recorder = recBuilder.setQualitySelector(qualitySelector).build()
-        var videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
     }
 }
 
