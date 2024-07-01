@@ -4,14 +4,11 @@ package com.example.rstm
 import AccelerometerScreen
 import GyroscopeScreen
 import LightScreenComp
-import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.location.Location
-import android.location.LocationRequest
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -21,6 +18,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.camera.core.CameraProvider
+import androidx.camera.core.CameraSelector
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.VideoCapture
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -28,23 +32,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.rstm.ui.screens.CameraScreen
 import com.example.rstm.ui.screens.HomeScreen
 import com.example.rstm.ui.screens.LocationScreen
 import com.example.rstm.ui.screens.magFieldScreen
 import com.example.rstm.ui.theme.RSTMTheme
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationServices
-import java.security.Permission
+import com.google.common.util.concurrent.ListenableFuture
 
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    lateinit var cameraProvider: CameraProvider
 
     @RequiresApi(Build.VERSION_CODES.R)
     private val PermissionArray = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -159,6 +162,10 @@ class MainActivity : ComponentActivity() {
                         composable("locationScreen"){
                             LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
                         }
+                        composable("cameraScreen"){
+                            startCam()
+                            CameraScreen(cameraProvider)
+                        }
                     }
                 }
             }
@@ -181,6 +188,17 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         sensorManager.unregisterListener(accEventListener)
         sensorManager.unregisterListener(magFieldEventListener)
+    }
+
+    fun startCam(){
+        lateinit var recorder: Recorder
+        val recBuilder = Recorder.Builder()
+        val qualitySelector = QualitySelector.fromOrderedList(
+            listOf(Quality.FHD, Quality.HD, Quality.HIGHEST)
+        )
+
+        recorder = recBuilder.setQualitySelector(qualitySelector).build()
+        var videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
     }
 }
 
