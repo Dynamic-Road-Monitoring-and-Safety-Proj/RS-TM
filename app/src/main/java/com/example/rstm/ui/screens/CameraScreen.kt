@@ -141,11 +141,18 @@ fun startRecording(
                 .format(System.currentTimeMillis()) + ".mp4"
     val contentValues = ContentValues().apply {
         put(MediaStore.Video.Media.DISPLAY_NAME, name)
+        put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+        put(MediaStore.Video.Media.IS_PENDING, 1)
     }
-    val mediaStoreOutput = MediaStoreOutputOptions.Builder(context.contentResolver,
-        MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+
+    val contentResolver = context.contentResolver
+    val mediaStoreUri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+    val mediaStoreOutput = mediaStoreUri?.let {
+        MediaStoreOutputOptions.Builder(contentResolver, it)
         .setContentValues(contentValues)
         .build()
+    }
 
     val captureListener = Consumer<VideoRecordEvent> { event ->
         when (event) {
@@ -155,24 +162,32 @@ fun startRecording(
             is VideoRecordEvent.Finalize -> {
                 if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                     Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
+                    // Set IS_PENDING to 0 to make the file visible in MediaStore
+                    contentValues.clear()
+                    contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
+                    contentResolver.update(mediaStoreUri!!, contentValues, null, null)
                 } else {
                     Log.e("CameraScreen", "Video recording failed: ${event.error}")
+                    // Delete the incomplete recording from MediaStore
+                    contentResolver.delete(mediaStoreUri!!, null, null)
                 }
-            }
-            else -> {
-                // Handle other events if needed
             }
         }
     }
 
-    val recording = videoCapture.output
-        .prepareRecording(context, mediaStoreOutput)
+    val recording = mediaStoreOutput?.let {
+        videoCapture.output
+        .prepareRecording(context, it)
         .withAudioEnabled()
         .start(executor, captureListener)
+    }
 
     return {
-        recording.stop()
+        if (recording != null) {
+            recording.stop()
+        }
     }
 }
+
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
