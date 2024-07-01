@@ -21,10 +21,8 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
@@ -35,7 +33,7 @@ import java.util.concurrent.Executor
 
 @SuppressLint("SetTextI18n")
 @Composable
-fun CameraScreen(context: Context, modifier: Modifier, lifecycleOwner: LifecycleOwner) {
+fun CameraScreen(modifier: Modifier, lifecycleOwner: LifecycleOwner) {
 
     val recBuilder = Recorder.Builder()
     val qualitySelector = QualitySelector.fromOrderedList(
@@ -141,18 +139,11 @@ fun startRecording(
                 .format(System.currentTimeMillis()) + ".mp4"
     val contentValues = ContentValues().apply {
         put(MediaStore.Video.Media.DISPLAY_NAME, name)
-        put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-        put(MediaStore.Video.Media.IS_PENDING, 1)
     }
-
-    val contentResolver = context.contentResolver
-    val mediaStoreUri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
-
-    val mediaStoreOutput = mediaStoreUri?.let {
-        MediaStoreOutputOptions.Builder(contentResolver, it)
+    val mediaStoreOutput = MediaStoreOutputOptions.Builder(context.contentResolver,
+        MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
         .setContentValues(contentValues)
         .build()
-    }
 
     val captureListener = Consumer<VideoRecordEvent> { event ->
         when (event) {
@@ -162,32 +153,24 @@ fun startRecording(
             is VideoRecordEvent.Finalize -> {
                 if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                     Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
-                    // Set IS_PENDING to 0 to make the file visible in MediaStore
-                    contentValues.clear()
-                    contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
-                    contentResolver.update(mediaStoreUri!!, contentValues, null, null)
                 } else {
                     Log.e("CameraScreen", "Video recording failed: ${event.error}")
-                    // Delete the incomplete recording from MediaStore
-                    contentResolver.delete(mediaStoreUri!!, null, null)
                 }
+            }
+            else -> {
+                // Handle other events if needed
             }
         }
     }
 
-    val recording = mediaStoreOutput?.let {
-        videoCapture.output
-        .prepareRecording(context, it)
+    val recording = videoCapture.output
+        .prepareRecording(context, mediaStoreOutput)
         .withAudioEnabled()
         .start(executor, captureListener)
-    }
 
     return {
-        if (recording != null) {
-            recording.stop()
-        }
+        recording.stop()
     }
 }
-
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"

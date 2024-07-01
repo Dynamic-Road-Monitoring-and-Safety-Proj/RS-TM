@@ -4,6 +4,7 @@ package com.example.rstm
 import AccelerometerScreen
 import GyroscopeScreen
 import LightScreenComp
+import android.Manifest
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -40,11 +41,14 @@ import com.google.android.gms.location.LocationServices
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-    @RequiresApi(Build.VERSION_CODES.R)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private val PermissionArray = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
         android.Manifest.permission.CAMERA,
         android.Manifest.permission.RECORD_AUDIO,
-        android.Manifest.permission.MANAGE_EXTERNAL_STORAGE
+        android.Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        Manifest.permission.READ_MEDIA_VIDEO
     )
     private val requestPermissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { PermissionsList ->
@@ -60,7 +64,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    @RequiresApi(Build.VERSION_CODES.R)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun checkPermission() {
         val permissionsToRequest = PermissionArray.filter { permission ->
             ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED
@@ -116,7 +120,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.R)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
@@ -154,7 +158,7 @@ class MainActivity : ComponentActivity() {
                             LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
                         }
                         composable("cameraScreen"){
-                            CameraScreen(this@MainActivity, Modifier, this@MainActivity)
+                            CameraScreen(Modifier, this@MainActivity)
                         }
                     }
                 }
