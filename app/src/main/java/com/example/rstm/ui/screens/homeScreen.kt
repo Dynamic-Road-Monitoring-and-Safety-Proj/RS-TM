@@ -40,5 +40,10 @@ fun HomeScreen(modifier: Modifier,navController:NavController) {
         },) {
             Text(text = "Location*-")
         }
+        Button(onClick = {
+            navController.navigate("cameraScreen")
+        },) {
+            Text(text = "Camera Screen")
+        }
     }
 }
