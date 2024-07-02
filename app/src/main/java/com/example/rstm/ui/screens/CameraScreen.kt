@@ -21,10 +21,8 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
@@ -35,7 +33,7 @@ import java.util.concurrent.Executor
 
 @SuppressLint("SetTextI18n")
 @Composable
-fun CameraScreen(context: Context, modifier: Modifier, lifecycleOwner: LifecycleOwner) {
+fun CameraScreen(modifier: Modifier, lifecycleOwner: LifecycleOwner) {
 
     val recBuilder = Recorder.Builder()
     val qualitySelector = QualitySelector.fromOrderedList(

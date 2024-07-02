@@ -4,6 +4,7 @@ package com.example.rstm
 import AccelerometerScreen
 import GyroscopeScreen
 import LightScreenComp
+import android.Manifest
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -40,11 +41,12 @@ import com.google.android.gms.location.LocationServices
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-    @RequiresApi(Build.VERSION_CODES.R)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private val PermissionArray = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
-        android.Manifest.permission.CAMERA,
-        android.Manifest.permission.RECORD_AUDIO,
-        android.Manifest.permission.MANAGE_EXTERNAL_STORAGE
+        Manifest.permission.CAMERA,
+        Manifest.permission.RECORD_AUDIO,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        Manifest.permission.MANAGE_MEDIA
     )
     private val requestPermissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { PermissionsList ->
@@ -60,7 +62,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    @RequiresApi(Build.VERSION_CODES.R)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun checkPermission() {
         val permissionsToRequest = PermissionArray.filter { permission ->
             ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED
@@ -74,33 +76,13 @@ class MainActivity : ComponentActivity() {
     }
     //TODO MAKE ABOVE LOCATION PART MODULAR after sensors are done
     private lateinit var sensorManager: SensorManager
-    var accelerometer: Sensor? = null
-    var x = mutableStateOf(0f)
-    var y = mutableStateOf(0f)
-    var z = mutableStateOf(0f)
+
 
     var magField: Sensor? = null
     var x2 = mutableStateOf(0f)
     var y2 = mutableStateOf(0f)
     var z2 = mutableStateOf(0f)
 
-
-    private val accEventListener = object : SensorEventListener {
-        override fun onSensorChanged(event: SensorEvent?) {
-            if (event != null) {
-                if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
-                    x.value = event.values[0]
-                    y.value = event.values[1]
-                    z.value = event.values[2]
-//                    values[0]: Acceleration minus Gx on the x-axis
-//                    values[1]: Acceleration minus Gy on the y-axis
-//                    values[2]: Acceleration minus Gz on the z-axis
-                }
-            }
-        }
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        }
-    }
     private val magFieldEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             if (event != null) {
@@ -116,7 +98,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.R)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
@@ -124,10 +106,7 @@ class MainActivity : ComponentActivity() {
 
         checkPermission()
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        if (accelerometer == null){
-            Toast.makeText(this, "Accelerometer is not available", Toast.LENGTH_SHORT).show()
-        }
+
         magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
         enableEdgeToEdge()
            setContent {
@@ -139,7 +118,7 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(Modifier.padding(innerPadding),navController)
                         }
                         composable("accelerometer"){
-                            AccelerometerScreen(Modifier.padding(innerPadding), accelerometer, x, y, z)//
+                            AccelerometerScreen(Modifier.padding(innerPadding))//
                         }
                         composable("gyro"){
                             GyroscopeScreen(modifier = Modifier.padding(innerPadding),sensorManager)
@@ -154,7 +133,7 @@ class MainActivity : ComponentActivity() {
                             LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
                         }
                         composable("cameraScreen"){
-                            CameraScreen(this@MainActivity, Modifier, this@MainActivity)
+                            CameraScreen(Modifier, this@MainActivity)
                         }
                     }
                 }
@@ -164,11 +143,6 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         sensorManager.registerListener(
-            accEventListener,
-            accelerometer,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
-        sensorManager.registerListener(
             magFieldEventListener,
             magField,
             SensorManager.SENSOR_DELAY_NORMAL
@@ -176,7 +150,6 @@ class MainActivity : ComponentActivity() {
     }
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(accEventListener)
         sensorManager.unregisterListener(magFieldEventListener)
     }
 }
