@@ -33,4 +33,5 @@ class LightViewModel : ViewModel() {
     fun stopLightSensor(sensorManager: SensorManager){
         sensorManager.unregisterListener(lightListener)
     }
+
 }

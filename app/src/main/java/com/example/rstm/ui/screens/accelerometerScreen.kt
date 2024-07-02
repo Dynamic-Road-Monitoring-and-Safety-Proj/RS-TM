@@ -3,17 +3,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.rstm.viewModels.AccelerometerScreenVM
 
 @Composable
 fun AccelerometerScreen(
-    modifier: Modifier,
-    accelerometer: Sensor?,
-    x: MutableState<Float>,
-    y: MutableState<Float>,
-    z: MutableState<Float>
+    modifier: Modifier
 ) {
+    val accelerometerVM: AccelerometerScreenVM = viewModel()
+    val accelerometer: Sensor? = accelerometerVM.accelerometer
+
     Column(modifier) {
         Text(text = "Accelerometer Screen", modifier = modifier.fillMaxWidth())
         if (accelerometer != null) {
@@ -21,8 +21,8 @@ fun AccelerometerScreen(
         } else {
             Text(text = "Accelerometer is not available")
         }
-        Text(text = "x: ${x.value}")
-        Text(text = "y: ${y.value}")
-        Text(text = "z: ${z.value}")
+        Text(text = "x: ${accelerometerVM.x.value}")
+        Text(text = "y: ${accelerometerVM.y.value}")
+        Text(text = "z: ${accelerometerVM.z.value}")
     }
 }
