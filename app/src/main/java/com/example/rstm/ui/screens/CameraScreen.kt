@@ -15,6 +15,7 @@ import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
@@ -27,6 +28,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
 import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.Executor
@@ -46,7 +52,7 @@ fun CameraScreen(modifier: Modifier, lifecycleOwner: LifecycleOwner) {
         modifier = modifier
             .fillMaxSize()
     ) {
-        var stopRecording: (() -> Unit)? = null
+        lateinit var recording: Recording
         Box(modifier = Modifier.weight(1f)) {
             AndroidView(factory = { ctx ->
                 val relativeLayout = RelativeLayout(ctx).apply {
@@ -95,10 +101,14 @@ fun CameraScreen(modifier: Modifier, lifecycleOwner: LifecycleOwner) {
                 relativeLayout.addView(stopButton)
 
                 startButton.setOnClickListener {
-                    stopRecording = startRecording(videoCapture, ctx, ContextCompat.getMainExecutor(ctx))
+                    CoroutineScope(Dispatchers.Main).launch {
+                        recording = startRecording(videoCapture, ctx, ContextCompat.getMainExecutor(ctx))
+                        delay(20000)
+                        recording.stop()
+                    }
                 }
                 stopButton.setOnClickListener {
-                    stopRecording?.invoke()
+                    recording.stop()
                 }
 
                 // Initialize CameraX
@@ -129,11 +139,11 @@ fun bindPreview(cameraProvider: ProcessCameraProvider, previewView: PreviewView,
 }
 
 @SuppressLint("MissingPermission")
-fun startRecording(
+suspend fun startRecording(
     videoCapture: VideoCapture<Recorder>,
     context: Context,
     executor: Executor
-): () -> Unit {
+): Recording {
     val name = "CameraX-recording-" +
             SimpleDateFormat(FILENAME_FORMAT, Locale.US)
                 .format(System.currentTimeMillis()) + ".mp4"
@@ -154,7 +164,7 @@ fun startRecording(
                 if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                     Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
                 } else {
-                    Log.e("CameraScreen", "Video recording failed: ${event.error}")
+                    Log.e("CameraScreen", "Video recording failed: ${event.cause}")
                 }
             }
             else -> {
@@ -163,14 +173,10 @@ fun startRecording(
         }
     }
 
-    val recording = videoCapture.output
+    return videoCapture.output
         .prepareRecording(context, mediaStoreOutput)
         .withAudioEnabled()
         .start(executor, captureListener)
-
-    return {
-        recording.stop()
-    }
 }
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"

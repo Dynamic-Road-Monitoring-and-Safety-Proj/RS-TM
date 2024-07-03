@@ -44,9 +44,7 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private val PermissionArray = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.CAMERA,
-        Manifest.permission.RECORD_AUDIO,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        Manifest.permission.MANAGE_MEDIA
+        Manifest.permission.RECORD_AUDIO
     )
     private val requestPermissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { PermissionsList ->
