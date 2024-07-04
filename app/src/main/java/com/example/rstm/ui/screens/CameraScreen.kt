@@ -167,9 +167,6 @@ suspend fun startRecording(
                     Log.e("CameraScreen", "Video recording failed: ${event.cause}")
                 }
             }
-            else -> {
-                // Handle other events if needed
-            }
         }
     }
 
