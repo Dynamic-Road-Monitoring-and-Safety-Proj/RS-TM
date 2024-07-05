@@ -75,27 +75,6 @@ class MainActivity : ComponentActivity() {
     //TODO MAKE ABOVE LOCATION PART MODULAR after sensors are done
     private lateinit var sensorManager: SensorManager
 
-
-    var magField: Sensor? = null
-    var x2 = mutableStateOf(0f)
-    var y2 = mutableStateOf(0f)
-    var z2 = mutableStateOf(0f)
-
-    private val magFieldEventListener = object : SensorEventListener {
-        override fun onSensorChanged(event: SensorEvent?) {
-            if (event != null) {
-                if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
-                    x2.value = event.values[0]
-                    y2.value = event.values[1]
-                    z2.value = event.values[2]
-//                    ambient magnetic field in the X, Y and Z axis.
-                }
-            }
-        }
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        }
-    }
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -105,7 +84,6 @@ class MainActivity : ComponentActivity() {
         checkPermission()
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
-        magField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
         enableEdgeToEdge()
            setContent {
             val navController = rememberNavController()
@@ -122,7 +100,7 @@ class MainActivity : ComponentActivity() {
                             GyroscopeScreen(modifier = Modifier.padding(innerPadding),sensorManager)
                         }
                         composable("magField"){
-                            magFieldScreen(modifier = Modifier.padding(innerPadding), magField = magField, x = x2, y = y2, z = z2)
+                            magFieldScreen(modifier = Modifier.padding(innerPadding), sensorManager)
                         }
                         composable("lightScreen"){
                             LightScreenComp(modifier = Modifier.padding(innerPadding), sensorManager)
@@ -137,18 +115,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-    override fun onResume() {
-        super.onResume()
-        sensorManager.registerListener(
-            magFieldEventListener,
-            magField,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
-    }
-    override fun onPause() {
-        super.onPause()
-        sensorManager.unregisterListener(magFieldEventListener)
     }
 }
 
