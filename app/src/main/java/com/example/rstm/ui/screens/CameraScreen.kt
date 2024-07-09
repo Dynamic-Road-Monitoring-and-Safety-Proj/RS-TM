@@ -6,12 +6,14 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.RelativeLayout
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture.OnImageCapturedCallback
 import androidx.camera.core.ImageCaptureException
@@ -82,13 +84,12 @@ import java.util.concurrent.Executor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import java.io.File
-
-
+import java.time.LocalDateTime
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetTextI18n")
 @Composable
 fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
-    var recording: Recording? = null
+    val viewModel: CameraScreenVM = viewModel()
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
     val controller = remember {
@@ -99,77 +100,6 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
             )
         }
     }
-    val viewModel = viewModel<CameraScreenVM>()
-    fun takePhoto(
-        controller: LifecycleCameraController,
-        onPhotoTaken: (Bitmap) -> Unit
-    ) {
-        controller.takePicture(
-            ContextCompat.getMainExecutor(appContext),
-            object : OnImageCapturedCallback() {
-                override fun onCaptureSuccess(image: ImageProxy) {
-                    super.onCaptureSuccess(image)
-
-                    val matrix = Matrix().apply {
-                        postRotate(image.imageInfo.rotationDegrees.toFloat())
-                    }
-                    val rotatedBitmap = Bitmap.createBitmap(
-                        image.toBitmap(),
-                        0,
-                        0,
-                        image.width,
-                        image.height,
-                        matrix,
-                        true
-                    )
-
-                    onPhotoTaken(rotatedBitmap)
-                }
-
-                override fun onError(exception: ImageCaptureException) {
-                    super.onError(exception)
-                    Log.e("Camera", "Couldn't take photo: ", exception)
-                }
-            }
-        )
-    }
-    @SuppressLint("MissingPermission")
-    fun recordVideo(controller: LifecycleCameraController) {
-        if(recording != null) {
-            recording?.stop()
-            recording = null
-            return
-        }
-        val outputFile = File(context.filesDir, "my-recording.mp4")
-        recording = controller.startRecording(
-            FileOutputOptions.Builder(outputFile).build(),
-            AudioConfig.create(true),
-            ContextCompat.getMainExecutor(appContext),
-        ) { event ->
-            when(event) {
-                is VideoRecordEvent.Finalize -> {
-                    if(event.hasError()) {
-                        recording?.close()
-                        recording = null
-
-                        Toast.makeText(
-                            appContext,
-                            "Video capture failed",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } else {
-                        Toast.makeText(
-                            appContext,
-                            "Video capture succeeded",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-            }
-        }
-    }
-    //___________________________________________________________________________________________________
-
 
     val bitmaps by viewModel.bitmaps.collectAsState()
 
@@ -179,8 +109,7 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
         sheetContent = {
             PhotoBottomSheetContent(
                 bitmaps = bitmaps,
-                modifier = Modifier
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             )
         }
     ) { padding ->
@@ -191,8 +120,7 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
         ) {
             CameraPreview(
                 controller = controller,
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             )
 
             IconButton(
@@ -202,8 +130,7 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
                             CameraSelector.DEFAULT_FRONT_CAMERA
                         } else CameraSelector.DEFAULT_BACK_CAMERA
                 },
-                modifier = Modifier
-                    .offset(16.dp, 16.dp)
+                modifier = Modifier.offset(16.dp, 16.dp)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Refresh,
@@ -232,10 +159,7 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
                 }
                 IconButton(
                     onClick = {
-                        takePhoto(
-                            controller = controller,
-                            onPhotoTaken = viewModel::onTakePhoto
-                        )
+                        viewModel.takePhoto(controller, appContext)
                     }
                 ) {
                     Icon(
@@ -245,7 +169,9 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
                 }
                 IconButton(
                     onClick = {
-                        recordVideo(controller)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            viewModel.recordVideo(controller, context, appContext)
+                        }
                     }
                 ) {
                     Icon(
@@ -263,10 +189,9 @@ fun PhotoBottomSheetContent(
     bitmaps: List<Bitmap>,
     modifier: Modifier = Modifier
 ) {
-    if(bitmaps.isEmpty()) {
+    if (bitmaps.isEmpty()) {
         Box(
-            modifier = modifier
-                .padding(16.dp),
+            modifier = modifier.padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
             Text("There are no photos yet")
@@ -283,13 +208,13 @@ fun PhotoBottomSheetContent(
                 Image(
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = null,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp))
                 )
             }
         }
     }
 }
+
 @Composable
 fun CameraPreview(
     controller: LifecycleCameraController,
@@ -305,17 +230,4 @@ fun CameraPreview(
         },
         modifier = modifier
     )
-}
-fun bindPreview(cameraProvider: ProcessCameraProvider, previewView: PreviewView, lifecycleOwner: LifecycleOwner) {
-    val preview = Preview.Builder().build().also {
-        it.setSurfaceProvider(previewView.surfaceProvider)
-    }
-    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-    try {
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview)
-    } catch (e: Exception) {
-        Log.d("CameraScreen", "Error binding camera provider", e)
-    }
 }
