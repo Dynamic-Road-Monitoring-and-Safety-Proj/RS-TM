@@ -306,16 +306,3 @@ fun CameraPreview(
         modifier = modifier
     )
 }
-fun bindPreview(cameraProvider: ProcessCameraProvider, previewView: PreviewView, lifecycleOwner: LifecycleOwner) {
-    val preview = Preview.Builder().build().also {
-        it.setSurfaceProvider(previewView.surfaceProvider)
-    }
-    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-    try {
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview)
-    } catch (e: Exception) {
-        Log.d("CameraScreen", "Error binding camera provider", e)
-    }
-}
