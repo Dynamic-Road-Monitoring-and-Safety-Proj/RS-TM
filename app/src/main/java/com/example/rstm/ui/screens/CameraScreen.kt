@@ -6,12 +6,14 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.RelativeLayout
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture.OnImageCapturedCallback
 import androidx.camera.core.ImageCaptureException
@@ -82,7 +84,7 @@ import java.util.concurrent.Executor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import java.io.File
-
+import java.time.LocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetTextI18n")
@@ -133,6 +135,7 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
             }
         )
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("MissingPermission")
     fun recordVideo(controller: LifecycleCameraController) {
         if(recording != null) {
@@ -140,7 +143,8 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
             recording = null
             return
         }
-        val outputFile = File(context.filesDir, "my-recording.mp4")
+        val time = (LocalDateTime.now()).toString()
+        val outputFile = File(context.filesDir, "($time.mp4")  //use time for this name
         recording = controller.startRecording(
             FileOutputOptions.Builder(outputFile).build(),
             AudioConfig.create(true),
@@ -168,8 +172,7 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
             }
         }
     }
-    //___________________________________________________________________________________________________
-
+//___________________________________________________________________________________________________
 
     val bitmaps by viewModel.bitmaps.collectAsState()
 
