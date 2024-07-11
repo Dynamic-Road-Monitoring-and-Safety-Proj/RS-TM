@@ -66,10 +66,6 @@ class CameraScreenVM(application: Application) : AndroidViewModel(application) {
 
                     onTakePhoto(rotatedBitmap)
                 }
-
-                override fun onError(exception: ImageCaptureException) {
-                    super.onError(exception)
-                }
             }
         )
     }

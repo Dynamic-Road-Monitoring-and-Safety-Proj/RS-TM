@@ -1,41 +1,18 @@
 package com.example.rstm.ui.screens
 
 import android.annotation.SuppressLint
-import android.app.Application
-import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.os.Build
-import android.provider.MediaStore
-import android.util.Log
-import android.view.View
-import android.widget.FrameLayout
-import android.widget.RelativeLayout
 import android.widget.Toast
-import androidx.annotation.RequiresApi
+import android.widget.Toast.LENGTH_SHORT
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture.OnImageCapturedCallback
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.FileOutputOptions
-import androidx.camera.video.MediaStoreOutputOptions
-import androidx.camera.video.Quality
-import androidx.camera.video.QualitySelector
-import androidx.camera.video.Recorder
-import androidx.camera.video.Recording
-import androidx.camera.video.VideoCapture
-import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
-import androidx.camera.view.video.AudioConfig
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,7 +24,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -68,23 +44,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.core.util.Consumer
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.CameraScreenVM
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.Executor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import java.io.File
-import java.time.LocalDateTime
+import kotlinx.coroutines.delay
+
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetTextI18n")
 @Composable
@@ -170,7 +136,13 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
                 IconButton(
                     onClick = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            viewModel.recordVideo(controller, context, appContext)
+                            scope.launch{
+                                viewModel.recordVideo(controller, context, appContext)
+                                Toast.makeText(context, "started", LENGTH_SHORT).show()
+                                delay(20000)
+                                Toast.makeText(context, "ended", LENGTH_SHORT).show()
+                                viewModel.recordVideo(controller, context, appContext)
+                            }
                         }
                     }
                 ) {
