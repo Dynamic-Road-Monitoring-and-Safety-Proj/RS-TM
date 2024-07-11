@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
+import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
@@ -47,6 +49,7 @@ import com.example.rstm.viewModels.CameraScreenVM
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetTextI18n")
@@ -133,7 +136,13 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
                 IconButton(
                     onClick = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            viewModel.recordVideo(controller, context, appContext)
+                            scope.launch{
+                                viewModel.recordVideo(controller, context, appContext)
+                                Toast.makeText(context, "started", LENGTH_SHORT).show()
+                                delay(20000)
+                                Toast.makeText(context, "ended", LENGTH_SHORT).show()
+                                viewModel.recordVideo(controller, context, appContext)
+                            }
                         }
                     }
                 ) {

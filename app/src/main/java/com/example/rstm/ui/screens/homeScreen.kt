@@ -45,5 +45,8 @@ fun HomeScreen(modifier: Modifier,navController:NavController) {
         },) {
             Text(text = "Camera Screen")
         }
+        Button(onClick = { navController.navigate("Detection & Collection Activated") }) {
+            Text(text = "Active Screen")
+        }
     }
 }
