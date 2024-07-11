@@ -6,9 +6,6 @@ import GyroscopeScreen
 import LightScreenComp
 import android.Manifest
 import android.content.pm.PackageManager
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
@@ -23,13 +20,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.rstm.ui.screens.Activated
 import com.example.rstm.ui.screens.CameraScreen
 import com.example.rstm.ui.screens.HomeScreen
 import com.example.rstm.ui.screens.LocationScreen
@@ -111,6 +108,9 @@ class MainActivity : ComponentActivity() {
                         composable("cameraScreen"){
                             CameraScreen(Modifier, this@MainActivity, applicationContext)
                         }
+                        composable("Detection & Collection Activated"){
+                            Activated(Modifier, sensorManager, applicationContext)
+                        }
                     }
                 }
             }
@@ -122,6 +122,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DefaultPreview() {
     RSTMTheme {
-//        HomeScreen(Modifier.padding(16.dp), NavController())
+
     }
 }
