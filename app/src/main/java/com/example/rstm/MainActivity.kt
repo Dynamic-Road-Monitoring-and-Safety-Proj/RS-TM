@@ -109,7 +109,7 @@ class MainActivity : ComponentActivity() {
                             CameraScreen(Modifier, this@MainActivity, applicationContext)
                         }
                         composable("Detection & Collection Activated"){
-                            Activated(Modifier, sensorManager, applicationContext)
+                            Activated(Modifier, sensorManager, this@MainActivity ,applicationContext)
                         }
                     }
                 }
