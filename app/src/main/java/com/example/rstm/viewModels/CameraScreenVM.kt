@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class CameraScreenVM(application: Application) : AndroidViewModel(application) {
     private val _bitmaps = MutableStateFlow<List<Bitmap>>(emptyList())
     val bitmaps = _bitmaps.asStateFlow()
-    var recording: Recording? = null
+    private var recording: Recording? = null
 
     fun onTakePhoto(bitmap: Bitmap) {
         _bitmaps.value += bitmap

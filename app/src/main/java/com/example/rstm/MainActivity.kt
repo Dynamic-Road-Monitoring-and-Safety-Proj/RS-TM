@@ -34,7 +34,6 @@ import com.example.rstm.ui.screens.magFieldScreen
 import com.example.rstm.ui.theme.RSTMTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import kotlin.coroutines.coroutineContext
 
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -92,7 +91,7 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(Modifier.padding(innerPadding),navController)
                         }
                         composable("accelerometer"){
-                            AccelerometerScreen(Modifier.padding(innerPadding))//
+                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager)//
                         }
                         composable("gyro"){
                             GyroscopeScreen(modifier = Modifier.padding(innerPadding),sensorManager)
@@ -110,7 +109,7 @@ class MainActivity : ComponentActivity() {
                             CameraScreen(Modifier, this@MainActivity, applicationContext)
                         }
                         composable("Detection & Collection Activated"){
-                            Activated(Modifier, sensorManager, this@MainActivity ,applicationContext)
+                            Activated(Modifier.padding(innerPadding), sensorManager, this@MainActivity ,applicationContext, fusedLocationClient)
                         }
                     }
                 }
