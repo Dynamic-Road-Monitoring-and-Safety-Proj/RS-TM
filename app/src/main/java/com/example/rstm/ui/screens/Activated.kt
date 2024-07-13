@@ -2,6 +2,7 @@ package com.example.rstm.ui.screens
 
 import AccelerometerScreen
 import GyroscopeScreen
+import LightScreenComp
 import android.content.Context
 import android.hardware.SensorManager
 import android.os.Build
@@ -12,7 +13,6 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,23 +21,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.CameraScreenVM
+import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -48,7 +46,8 @@ fun Activated(
     modifier: Modifier,
     sensorManager: SensorManager,
     context: Context,
-    appContext: Context
+    appContext: Context,
+    fusedLocationClient: FusedLocationProviderClient
 ){
 
     val viewModel: CameraScreenVM = viewModel()
@@ -66,9 +65,9 @@ fun Activated(
     controller.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
-        sheetPeekHeight = 0.dp,
+        sheetPeekHeight = 20.dp,
         sheetContent = {
-            SensorSheetContent(sensorManager,
+            SensorSheetContent(sensorManager,fusedLocationClient,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -119,9 +118,11 @@ fun Activated(
 }
 
 @Composable
-fun SensorSheetContent(sensorManager: SensorManager,modifier: Modifier) {
+fun SensorSheetContent(sensorManager: SensorManager, fusedLocationClient :FusedLocationProviderClient,modifier: Modifier) {
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
     AccelerometerScreen(modifier = modifier, sensorManager)
+    LightScreenComp(modifier = modifier, sensorManager = sensorManager )
+    LocationScreen(fusedLocationClient = fusedLocationClient)
 }
 
 @Composable

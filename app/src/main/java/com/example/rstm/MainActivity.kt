@@ -34,7 +34,6 @@ import com.example.rstm.ui.screens.magFieldScreen
 import com.example.rstm.ui.theme.RSTMTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import kotlin.coroutines.coroutineContext
 
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -110,7 +109,7 @@ class MainActivity : ComponentActivity() {
                             CameraScreen(Modifier, this@MainActivity, applicationContext)
                         }
                         composable("Detection & Collection Activated"){
-                            Activated(Modifier.padding(innerPadding), sensorManager, this@MainActivity ,applicationContext)
+                            Activated(Modifier.padding(innerPadding), sensorManager, this@MainActivity ,applicationContext, fusedLocationClient)
                         }
                     }
                 }
