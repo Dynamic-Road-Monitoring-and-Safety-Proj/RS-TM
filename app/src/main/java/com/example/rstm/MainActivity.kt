@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(Modifier.padding(innerPadding),navController)
                         }
                         composable("accelerometer"){
-                            AccelerometerScreen(Modifier.padding(innerPadding))//
+                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager)//
                         }
                         composable("gyro"){
                             GyroscopeScreen(modifier = Modifier.padding(innerPadding),sensorManager)
