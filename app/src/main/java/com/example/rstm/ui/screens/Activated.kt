@@ -64,7 +64,58 @@ fun Activated(
     val scaffoldState = rememberBottomSheetScaffoldState()
 
     controller.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-    
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = 0.dp,
+        sheetContent = {
+            SensorSheetContent(sensorManager,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            CameraPreview2(
+                controller = controller,
+                modifier = Modifier.fillMaxSize()
+            )
+            Row(){
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            scaffoldState.bottomSheetState.expand()
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Open gallery"
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            scope.launch() {
+                                viewModel.recordVideo(controller, context, appContext)
+                                Toast.makeText(context, "started", LENGTH_SHORT).show()
+                                delay(20000)
+                                Toast.makeText(context, "ended", LENGTH_SHORT).show()
+                                viewModel.recordVideo(controller, context, appContext)
+                            }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Record video"
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
