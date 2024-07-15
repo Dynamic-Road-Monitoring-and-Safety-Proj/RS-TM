@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.CameraScreenVM
+import com.example.rstm.viewModels.MagneticFieldScreenVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -49,7 +50,6 @@ fun Activated(
     appContext: Context,
     fusedLocationClient: FusedLocationProviderClient
 ){
-
     val viewModel: CameraScreenVM = viewModel()
     val scope = rememberCoroutineScope()
     val controller = remember {
@@ -123,6 +123,7 @@ fun SensorSheetContent(sensorManager: SensorManager, fusedLocationClient :FusedL
     AccelerometerScreen(modifier = modifier, sensorManager)
     LightScreenComp(modifier = modifier, sensorManager = sensorManager )
     LocationScreen(fusedLocationClient = fusedLocationClient)
+    magFieldScreen(modifier = modifier, sensorManager = sensorManager)
 }
 
 @Composable
