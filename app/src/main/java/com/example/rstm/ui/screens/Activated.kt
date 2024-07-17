@@ -27,54 +27,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.CameraScreenVM
 import com.example.rstm.viewModels.MagneticFieldScreenVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-class CustomLifecycleOwner : LifecycleOwner {
-    private val lifecycleRegistry = LifecycleRegistry(this)
-
-
-    override val lifecycle: Lifecycle
-        get() = lifecycleRegistry
-
-    fun onCreate() {
-        lifecycleRegistry.currentState = Lifecycle.State.CREATED
-    }
-
-    fun onStart() {
-        lifecycleRegistry.currentState = Lifecycle.State.STARTED
-    }
-
-    fun onResume() {
-        lifecycleRegistry.currentState = Lifecycle.State.RESUMED
-    }
-
-    fun onPause() {
-        lifecycleRegistry.currentState = Lifecycle.State.STARTED
-    }
-
-    fun onStop() {
-        lifecycleRegistry.currentState = Lifecycle.State.CREATED
-    }
-
-    fun onDestroy() {
-        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -85,37 +49,26 @@ fun Activated(
     context: Context,
     appContext: Context,
     fusedLocationClient: FusedLocationProviderClient
-) {
+){
     val viewModel: CameraScreenVM = viewModel()
     val scope = rememberCoroutineScope()
     val controller = remember {
         LifecycleCameraController(appContext).apply {
-            setEnabledUseCases(CameraController.VIDEO_CAPTURE)
+            setEnabledUseCases(
+                CameraController.VIDEO_CAPTURE
+            )
         }
     }
     val scaffoldState = rememberBottomSheetScaffoldState()
-    val lifecycleOwner = remember { CustomLifecycleOwner() }
-
-    // Manage the lifecycle state of the custom LifecycleOwner
-    DisposableEffect(Unit) {
-        lifecycleOwner.onCreate()
-        lifecycleOwner.onStart()
-        lifecycleOwner.onResume()
-        onDispose {
-            lifecycleOwner.onPause()
-            lifecycleOwner.onStop()
-            lifecycleOwner.onDestroy()
-        }
-    }
 
     controller.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-    controller.bindToLifecycle(lifecycleOwner)
-
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 20.dp,
         sheetContent = {
-            SensorSheetContent(sensorManager, fusedLocationClient, Modifier.fillMaxWidth())
+            SensorSheetContent(sensorManager,fusedLocationClient,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     ) { padding ->
         Box(
@@ -123,8 +76,11 @@ fun Activated(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // You can remove the CameraPreview2 composable and instead directly add controls
-            Row {
+            CameraPreview2(
+                controller = controller,
+                modifier = Modifier.fillMaxSize()
+            )
+            Row(){
                 IconButton(
                     onClick = {
                         scope.launch {
@@ -140,7 +96,7 @@ fun Activated(
                 IconButton(
                     onClick = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            scope.launch {
+                            scope.launch() {
                                 viewModel.recordVideo(controller, context, appContext)
                                 Toast.makeText(context, "started", LENGTH_SHORT).show()
                                 delay(20000)
@@ -161,14 +117,29 @@ fun Activated(
 }
 
 @Composable
-fun SensorSheetContent(
-    sensorManager: SensorManager,
-    fusedLocationClient: FusedLocationProviderClient,
-    modifier: Modifier
-) {
+fun SensorSheetContent(sensorManager: SensorManager, fusedLocationClient :FusedLocationProviderClient,modifier: Modifier) {
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
     AccelerometerScreen(modifier = modifier, sensorManager)
-    LightScreenComp(modifier = modifier, sensorManager = sensorManager)
+    LightScreenComp(modifier = modifier, sensorManager = sensorManager )
     LocationScreen(fusedLocationClient = fusedLocationClient)
     magFieldScreen(modifier = modifier, sensorManager = sensorManager)
 }
+
+@Composable
+fun CameraPreview2(
+    controller: LifecycleCameraController,
+    modifier: Modifier = Modifier
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    AndroidView(
+        factory = {
+            PreviewView(it).apply {
+                this.controller = controller
+                controller.bindToLifecycle(lifecycleOwner)
+            }
+        },
+        modifier = modifier
+    )
+}
+
