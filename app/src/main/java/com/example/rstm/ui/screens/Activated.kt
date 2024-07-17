@@ -55,8 +55,7 @@ fun Activated(
     val controller = remember {
         LifecycleCameraController(appContext).apply {
             setEnabledUseCases(
-                CameraController.IMAGE_CAPTURE or
-                        CameraController.VIDEO_CAPTURE
+                CameraController.VIDEO_CAPTURE
             )
         }
     }
@@ -70,7 +69,7 @@ fun Activated(
             SensorSheetContent(sensorManager,fusedLocationClient,
                 modifier = Modifier.fillMaxWidth()
             )
-        }
+        }q
     ) { padding ->
         Box(
             modifier = Modifier
