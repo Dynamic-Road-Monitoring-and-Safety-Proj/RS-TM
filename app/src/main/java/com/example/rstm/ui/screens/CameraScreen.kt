@@ -47,7 +47,6 @@ import com.example.rstm.viewModels.CameraScreenVM
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.lifecycle.LifecycleOwner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetTextI18n")
@@ -64,10 +63,6 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
             )
         }
     }
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    // Bind the camera controller to the lifecycle owner
-    controller.bindToLifecycle(lifecycleOwner)
 
     val bitmaps by viewModel.bitmaps.collectAsState()
 
@@ -86,6 +81,11 @@ fun CameraScreen(modifier: Modifier, context: Context, appContext: Context) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            CameraPreview(
+                controller = controller,
+                modifier = Modifier.fillMaxSize()
+            )
+
             IconButton(
                 onClick = {
                     controller.cameraSelector =
@@ -175,4 +175,21 @@ fun PhotoBottomSheetContent(
             }
         }
     }
+}
+
+@Composable
+fun CameraPreview(
+    controller: LifecycleCameraController,
+    modifier: Modifier = Modifier
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    AndroidView(
+        factory = {
+            PreviewView(it).apply {
+                this.controller = controller
+                controller.bindToLifecycle(lifecycleOwner)
+            }
+        },
+        modifier = modifier
+    )
 }
