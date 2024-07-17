@@ -131,7 +131,7 @@ class MainActivity : ComponentActivity() {
                             LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
                         }
                         composable("cameraScreen"){
-                            CameraPreviewScreen(Modifier, this@MainActivity,sensorManager, fusedLocationClient)
+                            CameraPreviewScreen(Modifier, sensorManager, fusedLocationClient)
                         }
                     }
                 }

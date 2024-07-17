@@ -67,7 +67,6 @@ private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 @Composable
 fun CameraPreviewScreen(
     modifier: Modifier.Companion,
-    mainActivity: MainActivity,
     sensorManager: SensorManager,
     fusedLocationClient: FusedLocationProviderClient
 ) {
