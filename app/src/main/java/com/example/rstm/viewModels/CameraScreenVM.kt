@@ -91,9 +91,9 @@ class CameraScreenVM(application: Application) : AndroidViewModel(application) {
                     if (event.hasError()) {
                         recording?.close()
                         recording = null
-                        Toast.makeText(appContext, "Video capture failed", Toast.LENGTH_LONG).show()
+                        Toast.makeText(appContext, "${event.cause}", Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(appContext, "Video capture succeeded", Toast.LENGTH_LONG).show()
+                        Toast.makeText(appContext, "Video capture succeeded ${event.cause}", Toast.LENGTH_LONG).show()
                     }
 
                 }
