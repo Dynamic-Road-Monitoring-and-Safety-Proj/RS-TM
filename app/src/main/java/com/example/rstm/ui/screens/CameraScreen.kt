@@ -23,7 +23,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
@@ -36,6 +39,8 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.Executor
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 @SuppressLint("SetTextI18n")
 @Composable
@@ -45,96 +50,24 @@ fun CameraScreen(modifier: Modifier, lifecycleOwner: LifecycleOwner) {
     val qualitySelector = QualitySelector.fromOrderedList(
         listOf(Quality.FHD, Quality.HD, Quality.HIGHEST)
     )
+    val lensFacing = CameraSelector.LENS_FACING_BACK
+    val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
     val recorder = recBuilder.setQualitySelector(qualitySelector).build()
     val videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
+    LaunchedEffect(lensFacing) {
+        val cameraProvider = context.getCameraProvider()
+        cameraProvider.unbindAll()
+        cameraProvider.bindToLifecycle(lifecycleOwner, cameraxSelector, videoCapture)
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
     ) {
         lateinit var recording: Recording
-        Box(modifier = Modifier.weight(1f)) {
-            AndroidView(factory = { ctx ->
-                val relativeLayout = RelativeLayout(ctx).apply {
-                    layoutParams = FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                    )
-                }
 
-                val previewView = PreviewView(ctx).apply {
-                    id = View.generateViewId()
-                    layoutParams = RelativeLayout.LayoutParams(
-                        RelativeLayout.LayoutParams.MATCH_PARENT,
-                        RelativeLayout.LayoutParams.MATCH_PARENT
-                    )
-                }
-
-                val startButton = android.widget.Button(ctx).apply {
-                    id = View.generateViewId()
-                    text = "Start Recording"
-                    layoutParams = RelativeLayout.LayoutParams(
-                        RelativeLayout.LayoutParams.WRAP_CONTENT,
-                        RelativeLayout.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
-                        addRule(RelativeLayout.ALIGN_PARENT_START)
-                        setMargins(16, 16, 16, 16)
-                    }
-                }
-
-                val stopButton = android.widget.Button(ctx).apply {
-                    id = View.generateViewId()
-                    text = "Stop Recording"
-                    layoutParams = RelativeLayout.LayoutParams(
-                        RelativeLayout.LayoutParams.WRAP_CONTENT,
-                        RelativeLayout.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
-                        addRule(RelativeLayout.ALIGN_PARENT_END)
-                        setMargins(16, 16, 16, 16)
-                    }
-                }
-
-                relativeLayout.addView(previewView)
-                relativeLayout.addView(startButton)
-                relativeLayout.addView(stopButton)
-
-                startButton.setOnClickListener {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        recording = startRecording(videoCapture, ctx, ContextCompat.getMainExecutor(ctx))
-                        delay(20000)
-                        recording.stop()
-                    }
-                }
-                stopButton.setOnClickListener {
-                    recording.stop()
-                }
-
-                // Initialize CameraX
-                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    bindPreview(cameraProvider, previewView, lifecycleOwner)
-                }, ContextCompat.getMainExecutor(ctx))
-
-                relativeLayout
-            }, modifier = Modifier.fillMaxSize())
-        }
-    }
-}
-
-fun bindPreview(cameraProvider: ProcessCameraProvider, previewView: PreviewView, lifecycleOwner: LifecycleOwner) {
-    val preview = Preview.Builder().build().also {
-        it.setSurfaceProvider(previewView.surfaceProvider)
-    }
-    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-    try {
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview)
-    } catch (e: Exception) {
-        Log.d("CameraScreen", "Error binding camera provider", e)
     }
 }
 
@@ -180,3 +113,11 @@ suspend fun startRecording(
 }
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
+private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
+    suspendCoroutine { continuation ->
+        ProcessCameraProvider.getInstance(this).also { cameraProvider ->
+            cameraProvider.addListener({
+                continuation.resume(cameraProvider.get())
+            }, ContextCompat.getMainExecutor(this))
+        }
+    }

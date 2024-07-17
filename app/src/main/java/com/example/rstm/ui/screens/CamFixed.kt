@@ -1,7 +1,5 @@
 package com.example.rstm.ui.screens
 
-package com.app.cmrxtutorial.composables
-
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
