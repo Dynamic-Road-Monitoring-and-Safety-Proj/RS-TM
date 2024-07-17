@@ -8,6 +8,8 @@ import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.RelativeLayout
+import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -22,6 +24,8 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
@@ -56,6 +60,7 @@ fun CameraScreen(modifier: Modifier, lifecycleOwner: LifecycleOwner) {
     val videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    lateinit var recording: Recording
 
     LaunchedEffect(lensFacing) {
         val cameraProvider = context.getCameraProvider()
@@ -66,13 +71,23 @@ fun CameraScreen(modifier: Modifier, lifecycleOwner: LifecycleOwner) {
         modifier = modifier
             .fillMaxSize()
     ) {
-        lateinit var recording: Recording
+        Button(onClick = {
+            recording = startRecording(videoCapture, context, ContextCompat.getMainExecutor(context))
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(20000)
+                recording.stop()
+                Toast.makeText(context,"done", LENGTH_SHORT).show()
+            }
+        }
+        ){
+            Text(text = "Capture Video 20 sec")
+        }
 
     }
 }
 
 @SuppressLint("MissingPermission")
-suspend fun startRecording(
+fun startRecording(
     videoCapture: VideoCapture<Recorder>,
     context: Context,
     executor: Executor
