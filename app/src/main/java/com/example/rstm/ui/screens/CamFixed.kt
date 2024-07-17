@@ -1,17 +1,19 @@
 package com.example.rstm.ui.screens
 
+import AccelerometerScreen
+import GyroscopeScreen
+import LightScreenComp
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
-import android.os.Build
+import android.hardware.SensorManager
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.Preview
+import androidx.camera.core.CameraSelector.LENS_FACING_BACK
+import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -19,19 +21,14 @@ import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
-import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -40,16 +37,41 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import androidx.core.util.Consumer
 import androidx.camera.video.MediaStoreOutputOptions
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.example.rstm.MainActivity
+import com.google.android.gms.location.FusedLocationProviderClient
+
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraPreviewScreen() {
-    val lensFacing = CameraSelector.LENS_FACING_BACK
+fun CameraPreviewScreen(
+    modifier: Modifier.Companion,
+    mainActivity: MainActivity,
+    sensorManager: SensorManager,
+    fusedLocationClient: FusedLocationProviderClient
+) {
+    var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
@@ -66,23 +88,83 @@ fun CameraPreviewScreen() {
         cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(lifecycleOwner, cameraxSelector, videoCapture)
     }
-    Box(contentAlignment = Alignment.BottomCenter, modifier = Modifier.fillMaxSize()) {
-        Button(onClick = {
-            recording = captureVideo(videoCapture, context, ContextCompat.getMainExecutor(context))
-            CoroutineScope(Dispatchers.Main).launch {
-                delay(20000)
-                recording.stop()
-                Toast.makeText(context,"done",LENGTH_SHORT).show()
-            }
+    val scope = rememberCoroutineScope()
+    val scaffoldState = rememberBottomSheetScaffoldState()
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = 0.dp,
+        sheetContent = {
+            SensorSheetContent(sensorManager, fusedLocationClient ,modifier)
         }
-        ){
-            Text(text = "Capture Video 20 sec")
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            IconButton(
+                onClick = {
+                    lensFacing =
+                        if (lensFacing == LENS_FACING_BACK) {
+                            LENS_FACING_FRONT
+                        } else LENS_FACING_BACK
+                },
+                modifier = Modifier.offset(16.dp, 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Refresh,
+                    contentDescription = "Switch camera"
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            scaffoldState.bottomSheetState.expand()
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Open gallery"
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        recording = startRecording(videoCapture, context, ContextCompat.getMainExecutor(context))
+                        CoroutineScope(Dispatchers.Main).launch {
+                            delay(20000)
+                            recording.stop()
+                            Toast.makeText(context,"done", LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Record video"
+                    )
+                }
+            }
         }
     }
 }
 
+@Composable
+fun SensorSheetContent(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
+    GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
+    AccelerometerScreen(modifier = modifier, sensorManager)
+    LightScreenComp(modifier = modifier, sensorManager = sensorManager )
+    LocationScreen(fusedLocationClient = fusedLocationClient)
+}
+
 @SuppressLint("MissingPermission")
-private fun captureVideo(
+fun startRecording(
     videoCapture: VideoCapture<Recorder>,
     context: Context,
     executor: Executor

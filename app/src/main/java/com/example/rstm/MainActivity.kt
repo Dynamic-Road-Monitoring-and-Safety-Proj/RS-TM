@@ -30,7 +30,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.rstm.ui.screens.CameraScreen
+import com.example.rstm.ui.screens.CameraPreviewScreen
 import com.example.rstm.ui.screens.HomeScreen
 import com.example.rstm.ui.screens.LocationScreen
 import com.example.rstm.ui.screens.magFieldScreen
@@ -116,7 +116,7 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(Modifier.padding(innerPadding),navController)
                         }
                         composable("accelerometer"){
-                            AccelerometerScreen(Modifier.padding(innerPadding))//
+                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager)
                         }
                         composable("gyro"){
                             GyroscopeScreen(modifier = Modifier.padding(innerPadding),sensorManager)
@@ -131,7 +131,7 @@ class MainActivity : ComponentActivity() {
                             LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
                         }
                         composable("cameraScreen"){
-                            CameraScreen(Modifier, this@MainActivity)
+                            CameraPreviewScreen(Modifier, this@MainActivity,sensorManager, fusedLocationClient)
                         }
                     }
                 }
