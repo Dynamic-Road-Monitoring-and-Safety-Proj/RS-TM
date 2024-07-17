@@ -33,12 +33,49 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.CameraScreenVM
 import com.example.rstm.viewModels.MagneticFieldScreenVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+class CustomLifecycleOwner : LifecycleOwner {
+    private val lifecycleRegistry = LifecycleRegistry(this)
+
+    private fun getLifecycle(): Lifecycle = lifecycleRegistry
+
+    override val lifecycle: Lifecycle
+        get() = getLifecycle()
+
+    fun onCreate() {
+        lifecycleRegistry.currentState = Lifecycle.State.CREATED
+    }
+
+    fun onStart() {
+        lifecycleRegistry.currentState = Lifecycle.State.STARTED
+    }
+
+    fun onResume() {
+        lifecycleRegistry.currentState = Lifecycle.State.RESUMED
+    }
+
+    fun onPause() {
+        lifecycleRegistry.currentState = Lifecycle.State.STARTED
+    }
+
+    fun onStop() {
+        lifecycleRegistry.currentState = Lifecycle.State.CREATED
+    }
+
+    fun onDestroy() {
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -69,7 +106,7 @@ fun Activated(
             SensorSheetContent(sensorManager,fusedLocationClient,
                 modifier = Modifier.fillMaxWidth()
             )
-        }q
+        }
     ) { padding ->
         Box(
             modifier = Modifier
