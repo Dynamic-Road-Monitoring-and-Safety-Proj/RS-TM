@@ -68,7 +68,7 @@ fun CameraScreen(modifier: Modifier, lifecycleOwner: LifecycleOwner) {
                         RelativeLayout.LayoutParams.MATCH_PARENT,
                         RelativeLayout.LayoutParams.MATCH_PARENT
                     )
-                }
+                }.controller =
 
                 val startButton = android.widget.Button(ctx).apply {
                     id = View.generateViewId()
