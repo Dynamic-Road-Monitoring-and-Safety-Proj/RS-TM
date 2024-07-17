@@ -95,6 +95,7 @@ class CameraScreenVM(application: Application) : AndroidViewModel(application) {
                     } else {
                         Toast.makeText(appContext, "Video capture succeeded", Toast.LENGTH_LONG).show()
                     }
+
                 }
             }
         }
