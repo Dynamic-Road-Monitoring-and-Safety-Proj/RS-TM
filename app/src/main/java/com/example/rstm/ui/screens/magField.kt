@@ -15,7 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.MagneticFieldScreenVM
 
 @Composable
-fun magFieldScreen(
+fun MagFieldScreen(
     modifier: Modifier,
     sensorManager : SensorManager
 ) {

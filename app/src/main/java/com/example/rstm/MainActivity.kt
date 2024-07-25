@@ -30,7 +30,7 @@ import com.example.rstm.ui.screens.Activated
 import com.example.rstm.ui.screens.CameraScreen
 import com.example.rstm.ui.screens.HomeScreen
 import com.example.rstm.ui.screens.LocationScreen
-import com.example.rstm.ui.screens.magFieldScreen
+import com.example.rstm.ui.screens.MagFieldScreen
 import com.example.rstm.ui.theme.RSTMTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -97,7 +97,7 @@ class MainActivity : ComponentActivity() {
                             GyroscopeScreen(modifier = Modifier.padding(innerPadding),sensorManager)
                         }
                         composable("magField"){
-                            magFieldScreen(modifier = Modifier.padding(innerPadding), sensorManager)
+                            MagFieldScreen(modifier = Modifier.padding(innerPadding), sensorManager)
                         }
                         composable("lightScreen"){
                             LightScreenComp(modifier = Modifier.padding(innerPadding), sensorManager)
