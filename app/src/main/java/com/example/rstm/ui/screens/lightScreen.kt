@@ -24,6 +24,6 @@ fun LightScreenComp(modifier: Modifier, sensorManager:SensorManager) {
     Column(modifier) {
         Text(text = "Light brightness Screen", modifier = modifier.fillMaxWidth())
         Text(text = if (viewModel.lightSensor != null) "LightS is available" else "LightS is not available")
-        Text(text = "x: ${lightValue.value}")
+        Text(text = "Luminosity: ${lightValue.value}")
     }
 }
