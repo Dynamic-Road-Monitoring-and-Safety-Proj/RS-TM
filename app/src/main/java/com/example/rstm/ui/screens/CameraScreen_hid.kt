@@ -100,7 +100,11 @@ fun CameraPreviewScreen(
     val executor = Executors.newSingleThreadExecutor()
     LaunchedEffect(Unit) {
         executor.execute {
-            recording = captureVideo(videoCapture, context, ContextCompat.getMainExecutor(context))
+            try {
+                recording = captureVideo(videoCapture, context, ContextCompat.getMainExecutor(context))
+            } catch (e: Exception) {
+                Log.e("CameraPreviewScreen", "Error starting video recording", e)
+            }
         }
     }
 
