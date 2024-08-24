@@ -94,7 +94,7 @@ fun CameraPreviewScreen(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 0.dp,
         sheetContent = {
-//            SensorSheetContent2(sensorManager = sensorManager, fusedLocationClient = fusedLocationClient, modifier = Modifier)
+            SensorSheetContent2(sensorManager = sensorManager, fusedLocationClient = fusedLocationClient, modifier = Modifier)
         }
     ) { padding ->
         Box(
@@ -167,7 +167,7 @@ fun CameraPreviewScreen(
 fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
     AccelerometerScreen(modifier = modifier, sensorManager)
-    LightScreenComp(modifier = modifier, sensorManager = sensorManager )
+    LightScreenComp(modifier = modifier, sensorManager = sensorManager)
     LocationScreen(fusedLocationClient = fusedLocationClient)
 }
 @SuppressLint("MissingPermission")
