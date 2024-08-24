@@ -73,8 +73,8 @@ private fun fetchLocation(
             } else {
                 // Fallback to request location updates
                 val request = LocationRequest.create().apply {
-                    interval = 1000
-                    fastestInterval = 500
+                    interval = 2000
+                    fastestInterval = 1000
                     priority = LocationRequest.PRIORITY_HIGH_ACCURACY
                 }
                 fusedLocationClient.requestLocationUpdates(
