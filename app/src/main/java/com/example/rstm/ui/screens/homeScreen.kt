@@ -100,6 +100,12 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController) {
             ) {
                 Text(text = "Active Screen")
             }
+            Button(
+                onClick = { navController.navigate("Hidden View") },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text(text = "Hidden Preview record local")
+            }
         }
     }
 }

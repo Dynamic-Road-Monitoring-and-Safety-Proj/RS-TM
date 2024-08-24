@@ -27,6 +27,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.rstm.ui.screens.Activated
+import com.example.rstm.ui.screens.CameraPreviewScreen
 import com.example.rstm.ui.screens.CameraScreen
 import com.example.rstm.ui.screens.HomeScreen
 import com.example.rstm.ui.screens.LocationScreen
@@ -110,6 +111,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("Detection & Collection Activated"){
                             Activated(Modifier.padding(innerPadding), sensorManager, this@MainActivity ,applicationContext, fusedLocationClient)
+                        }
+                        composable("Hidden View"){
+                            CameraPreviewScreen(Modifier = Modifier.padding(innerPadding), sensorManager = sensorManager,  fusedLocationClient = fusedLocationClient)
                         }
                     }
                 }
