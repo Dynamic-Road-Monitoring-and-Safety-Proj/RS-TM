@@ -69,7 +69,7 @@ private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 fun CameraPreviewScreen(
     sensorManager: SensorManager,
     fusedLocationClient: FusedLocationProviderClient,
-    Modifier: Modifier.Companion
+    Modifier: Modifier
 ) {
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
