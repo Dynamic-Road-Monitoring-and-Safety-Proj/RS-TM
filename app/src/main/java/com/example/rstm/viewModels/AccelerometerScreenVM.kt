@@ -5,14 +5,20 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.widget.Toast
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.delay
 
 class AccelerometerScreenVM : ViewModel() {
     var accelerometer: Sensor? = null
     var x = mutableStateOf(0f)
     var y = mutableStateOf(0f)
     var z = mutableStateOf(0f)
+
+
+
     private val accEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             if (event != null) {

@@ -5,9 +5,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.AccelerometerScreenVM
+import kotlinx.coroutines.delay
 
 @Composable
 fun AccelerometerScreen(
@@ -17,6 +21,7 @@ fun AccelerometerScreen(
     val accelerometerVM: AccelerometerScreenVM = viewModel()
     val accelerometer: Sensor? = accelerometerVM.accelerometer
 
+
     DisposableEffect(sensorManager) {
         accelerometerVM.startAccelerometer(sensorManager)
         onDispose {
@@ -25,6 +30,10 @@ fun AccelerometerScreen(
     }
 
     Column(modifier) {
+        LaunchedEffect(Unit) {
+            delay(2000) // 2-second delay
+        }
+
         Text(text = "Accelerometer Screen", modifier = modifier.fillMaxWidth())
         if (accelerometer != null) {
             Text(text = "Accelerometer is available")
@@ -34,5 +43,6 @@ fun AccelerometerScreen(
         Text(text = "x: ${accelerometerVM.x.value}")
         Text(text = "y: ${accelerometerVM.y.value}")
         Text(text = "z: ${accelerometerVM.z.value}")
+
     }
 }
