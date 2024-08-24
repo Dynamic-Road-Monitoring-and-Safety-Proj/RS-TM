@@ -54,13 +54,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
@@ -75,21 +81,30 @@ fun CameraPreviewScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
-
+    var recording by remember { mutableStateOf<Recording?>(null) }
     val recBuilder = Recorder.Builder()
     val qualitySelector = QualitySelector.fromOrderedList(
         listOf(Quality.FHD, Quality.HD, Quality.HIGHEST)
     )
     val recorder = recBuilder.setQualitySelector(qualitySelector).build()
     val videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
-    lateinit var recording:Recording
     LaunchedEffect(lensFacing) {
         val cameraProvider = context.getCameraProvider()
         cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(lifecycleOwner, cameraxSelector, videoCapture)
+        
     }
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
+
+    val executor = Executors.newSingleThreadExecutor()
+    LaunchedEffect(Unit) {
+        executor.execute {
+            recording = captureVideo(videoCapture, context, ContextCompat.getMainExecutor(context))
+        }
+    }
+
+
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 0.dp,
@@ -146,11 +161,21 @@ fun CameraPreviewScreen(
                 }
                 IconButton(
                     onClick = {
-                        CoroutineScope(Dispatchers.Main).launch {
-                            recording = captureVideo(videoCapture, context, ContextCompat.getMainExecutor(context))
-                            delay(10000)
-                            recording.stop()
-                            Toast.makeText(context,"done", LENGTH_SHORT).show()
+                        // Stop recording on the main thread
+                        scope.launch {
+                            recording?.stop()
+                            recording = null
+                            Toast.makeText(context, "done", LENGTH_SHORT).show()
+                            // Ensure the executor shuts down after tasks are complete
+                            executor.shutdown()
+                            try {
+                                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                                    executor.shutdownNow()
+                                }
+                            } catch (e: InterruptedException) {
+                                executor.shutdownNow()
+                                Thread.currentThread().interrupt()
+                            }
                         }
                     }
                 ) {
@@ -167,7 +192,7 @@ fun CameraPreviewScreen(
 fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
     AccelerometerScreen(modifier = modifier, sensorManager)
-    LightScreenComp(modifier = modifier, sensorManager = sensorManager)
+    LightScreenComp(modifier = modifier, sensorManager = sensorManager )
     LocationScreen(fusedLocationClient = fusedLocationClient)
 }
 @SuppressLint("MissingPermission")
