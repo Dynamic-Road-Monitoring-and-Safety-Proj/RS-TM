@@ -37,6 +37,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import androidx.core.util.Consumer
 import androidx.camera.video.MediaStoreOutputOptions
+import androidx.camera.video.PendingRecording
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -81,7 +82,8 @@ fun CameraPreviewScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
-    var recording by remember { mutableStateOf<Recording?>(null) }
+    var recording by remember { mutableStateOf<PendingRecording?>(null) }
+    var onRecording by remember { mutableStateOf<Recording?>(null) }
     val recBuilder = Recorder.Builder()
     val qualitySelector = QualitySelector.fromOrderedList(
         listOf(Quality.FHD, Quality.HD, Quality.HIGHEST)
@@ -92,22 +94,23 @@ fun CameraPreviewScreen(
         val cameraProvider = context.getCameraProvider()
         cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(lifecycleOwner, cameraxSelector, videoCapture)
-        
     }
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
 
     val executor = Executors.newSingleThreadExecutor()
+    val captureListener : Consumer<VideoRecordEvent>
     LaunchedEffect(Unit) {
         executor.execute {
             try {
-                recording = captureVideo(videoCapture, context, ContextCompat.getMainExecutor(context))
+                val(recording, captureListener) = captureVideo(videoCapture, context, ContextCompat.getMainExecutor(context))
+                onRecording = recording.start(executor, captureListener)
+
             } catch (e: Exception) {
                 Log.e("CameraPreviewScreen", "Error starting video recording", e)
             }
         }
     }
-
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
@@ -137,12 +140,6 @@ fun CameraPreviewScreen(
                     )
                 }
                 Spacer(modifier = Modifier.size(20.dp))
-                Column {
-//                    GyroscopeScreen(modifier = Modifier, sensorManager = sensorManager)
-//                    AccelerometerScreen(modifier = Modifier, sensorManager)
-//                    LightScreenComp(modifier = Modifier, sensorManager = sensorManager)
-//                    LocationScreen(fusedLocationClient = fusedLocationClient)
-                }
             }
             Row(
                 modifier = Modifier
@@ -167,7 +164,7 @@ fun CameraPreviewScreen(
                     onClick = {
                         // Stop recording on the main thread
                         scope.launch {
-                            recording?.stop()
+                            onRecording?.stop()
                             recording = null
                             Toast.makeText(context, "done", LENGTH_SHORT).show()
                             // Ensure the executor shuts down after tasks are complete
@@ -199,12 +196,13 @@ fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : Fuse
     LightScreenComp(modifier = modifier, sensorManager = sensorManager )
     LocationScreen(fusedLocationClient = fusedLocationClient)
 }
+
 @SuppressLint("MissingPermission")
 private fun captureVideo(
     videoCapture: VideoCapture<Recorder>,
     context: Context,
     executor: Executor
-): Recording {
+): Pair<PendingRecording, Consumer<VideoRecordEvent> >{
     val name = "CameraX-recording-" +
             SimpleDateFormat(FILENAME_FORMAT, Locale.US)
                 .format(System.currentTimeMillis()) + ".mp4"
@@ -220,7 +218,6 @@ private fun captureVideo(
         when (event) {
             is VideoRecordEvent.Start -> {
                 Log.d("CameraScreen", "Recording started")
-            }
             is VideoRecordEvent.Finalize -> {
                 if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                     Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
@@ -234,10 +231,12 @@ private fun captureVideo(
         }
     }
 
-    return videoCapture.output
+    return Pair(videoCapture.output
         .prepareRecording(context, mediaStoreOutput)
-        .withAudioEnabled()
-        .start(executor, captureListener)
+        .withAudioEnabled(),
+        captureListener)
+
+//        .start(executor, captureListener)
 }
 
 private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
