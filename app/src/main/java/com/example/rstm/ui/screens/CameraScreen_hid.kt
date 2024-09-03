@@ -99,13 +99,14 @@ fun CameraPreviewScreen(
     val scaffoldState = rememberBottomSheetScaffoldState()
 
     val executor = Executors.newSingleThreadExecutor()
-    val captureListener : Consumer<VideoRecordEvent>
+    var captureListener : Consumer<VideoRecordEvent>
     LaunchedEffect(Unit) {
         executor.execute {
             try {
-                val(recording, captureListener) = captureVideo(videoCapture, context, ContextCompat.getMainExecutor(context))
-                onRecording = recording.start(executor, captureListener)
-
+                val result = captureVideo(videoCapture, context)
+                captureListener = result.second
+                recording = result.first // Assign to the existing `recording`
+                onRecording = recording?.start(executor, captureListener) // Use `result.second` for the existing captureListener
             } catch (e: Exception) {
                 Log.e("CameraPreviewScreen", "Error starting video recording", e)
             }
@@ -200,8 +201,7 @@ fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : Fuse
 @SuppressLint("MissingPermission")
 private fun captureVideo(
     videoCapture: VideoCapture<Recorder>,
-    context: Context,
-    executor: Executor
+    context: Context
 ): Pair<PendingRecording, Consumer<VideoRecordEvent> >{
     val name = "CameraX-recording-" +
             SimpleDateFormat(FILENAME_FORMAT, Locale.US)
@@ -218,6 +218,7 @@ private fun captureVideo(
         when (event) {
             is VideoRecordEvent.Start -> {
                 Log.d("CameraScreen", "Recording started")
+            }
             is VideoRecordEvent.Finalize -> {
                 if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                     Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
@@ -231,10 +232,11 @@ private fun captureVideo(
         }
     }
 
-    return Pair(videoCapture.output
+    val recording = videoCapture.output
         .prepareRecording(context, mediaStoreOutput)
-        .withAudioEnabled(),
-        captureListener)
+        .withAudioEnabled()
+
+    return Pair(recording, captureListener)
 
 //        .start(executor, captureListener)
 }
