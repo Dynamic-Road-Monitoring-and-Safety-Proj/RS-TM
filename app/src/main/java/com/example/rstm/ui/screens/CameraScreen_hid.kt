@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -104,8 +105,16 @@ fun CameraPreviewScreen(
         executor.execute {
             try {
                 while(true) {
-
-
+                    if(URIlist.size >= 6) {
+                        val uri = URIlist[0]
+                        val contentResolver = context.contentResolver
+                        val deleted = contentResolver.delete(URIlist[0], null, null)
+                        if (deleted > 0) {
+                            Log.d("DeleteVideo", "Video deleted successfully: $uri")
+                        } else {
+                            Log.e("DeleteVideo", "Failed to delete video: $uri")
+                        }
+                    }
                     val result = captureVideo(videoCapture, context, URIlist)
                     captureListener = result.second
                     recording = result.first // Assign to the existing `recording`
