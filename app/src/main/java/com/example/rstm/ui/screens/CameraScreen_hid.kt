@@ -8,38 +8,27 @@ import android.content.ContentValues
 import android.content.Context
 import android.hardware.SensorManager
 import android.net.Uri
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import android.widget.Toast
-import android.widget.Toast.LENGTH_SHORT
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraSelector.LENS_FACING_BACK
 import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.MediaStoreOutputOptions
+import androidx.camera.video.PendingRecording
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.core.content.ContextCompat
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
-import androidx.core.util.Consumer
-import androidx.camera.video.MediaStoreOutputOptions
-import androidx.camera.video.PendingRecording
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -53,18 +42,35 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.util.Consumer
+import com.arthenica.mobileffmpeg.Config
+import com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL
+import com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS
+import com.arthenica.mobileffmpeg.FFmpeg
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
@@ -183,33 +189,60 @@ fun CameraPreviewScreen(
                 }
                 IconButton(
                     onClick = {
-                        // Stop recording on the main thread
-                        scope.launch {
-                            onRecording?.stop()
-                            recording = null
-                            Toast.makeText(context, "done", LENGTH_SHORT).show()
-                            // Ensure the executor shuts down after tasks are complete
-                            executor.shutdown()
-                            try {
-                                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                                    executor.shutdownNow()
+                        val currentTime = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(Date())
+                        val dcimDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+                        val subfolder = File(dcimDirectory, "RS-TM")
+                        // Ensure the directory exists
+                        if (!subfolder.exists()) {
+                            subfolder.mkdirs()
+                        }
+
+                        val outputPath = File(subfolder, "Video_$currentTime.mp4").absolutePath
+
+                        val inputs = URIlist.joinToString("|") { "-i $it" }
+                        val filter = URIlist.indices.joinToString(";") { "[${it}:v:0]" } + "concat=n=${URIlist.size}:v=1:a=0[outv]"
+                        val command = "$inputs -filter_complex \"$filter\" -map \"[outv]\" $outputPath"
+
+                        val executionId = FFmpeg.executeAsync(
+                            command
+                        ) { _, returnCode ->
+                            when (returnCode) {
+                                RETURN_CODE_SUCCESS -> {
+                                    Log.i(
+                                        Config.TAG,
+                                        "Async command execution completed successfully."
+                                    )
                                 }
-                            } catch (e: InterruptedException) {
-                                executor.shutdownNow()
-                                Thread.currentThread().interrupt()
+                                RETURN_CODE_CANCEL -> {
+                                    Log.i(
+                                        Config.TAG,
+                                        "Async command execution cancelled by user."
+                                    )
+                                }
+                                else -> {
+                                    Log.i(
+                                        Config.TAG,
+                                        String.format(
+                                            "Async command execution failed with returnCode=%d.",
+                                            returnCode
+                                        )
+                                    )
+                                }
                             }
                         }
+
                     }
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Record video"
+                        contentDescription = "Record Last 30"
                     )
                 }
             }
         }
     }
 }
+
 @Composable
 fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
@@ -230,7 +263,7 @@ private fun captureVideo(
         }
         URIlist.removeAt(5)
     }
-    var index = URIlist.size%6
+    val index = URIlist.size%6
 
     //names will be like 0.mp4 to 5.mp4
     val name = "$index.mp4"
