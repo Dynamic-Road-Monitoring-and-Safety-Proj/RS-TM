@@ -7,6 +7,7 @@ import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.hardware.SensorManager
+import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
@@ -30,9 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.core.content.ContextCompat
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.concurrent.Executor
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import androidx.core.util.Consumer
@@ -62,8 +60,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.location.FusedLocationProviderClient
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -78,6 +74,8 @@ fun CameraPreviewScreen(
     fusedLocationClient: FusedLocationProviderClient,
     Modifier: Modifier
 ) {
+    var URIlist : MutableList<Uri> = mutableListOf()
+
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -88,8 +86,10 @@ fun CameraPreviewScreen(
     val qualitySelector = QualitySelector.fromOrderedList(
         listOf(Quality.FHD, Quality.HD, Quality.HIGHEST)
     )
+
     val recorder = recBuilder.setQualitySelector(qualitySelector).build()
     val videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
+
     LaunchedEffect(lensFacing) {
         val cameraProvider = context.getCameraProvider()
         cameraProvider.unbindAll()
@@ -103,10 +103,21 @@ fun CameraPreviewScreen(
     LaunchedEffect(Unit) {
         executor.execute {
             try {
-                val result = captureVideo(videoCapture, context)
-                captureListener = result.second
-                recording = result.first // Assign to the existing `recording`
-                onRecording = recording?.start(executor, captureListener) // Use `result.second` for the existing captureListener
+                while(true) {
+
+
+                    val result = captureVideo(videoCapture, context, URIlist)
+                    captureListener = result.second
+                    recording = result.first // Assign to the existing `recording`
+                    onRecording = recording?.start(
+                        executor,
+                        captureListener
+                    )
+                    scope.launch {
+                        delay(1000)
+                        onRecording?.stop()
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("CameraPreviewScreen", "Error starting video recording", e)
             }
@@ -201,9 +212,19 @@ fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : Fuse
 @SuppressLint("MissingPermission")
 private fun captureVideo(
     videoCapture: VideoCapture<Recorder>,
-    context: Context
+    context: Context,
+    URIlist: MutableList<Uri>
 ): Pair<PendingRecording, Consumer<VideoRecordEvent> >{
-    val name = "index:$index.mp4"
+    if(URIlist.size >= 6){
+        for (i in 0..4){
+            URIlist[i] = URIlist[i+1]
+        }
+        URIlist.removeAt(5)
+    }
+    var index = URIlist.size%6
+
+    //names will be like 0.mp4 to 5.mp4
+    val name = "$index.mp4"
     val contentValues = ContentValues().apply {
         put(MediaStore.Video.Media.DISPLAY_NAME, name)
     }
@@ -220,6 +241,12 @@ private fun captureVideo(
             is VideoRecordEvent.Finalize -> {
                 if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                     Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
+                    val videoUri = event.outputResults.outputUri
+                    if (URIlist.size < 6) {
+                        URIlist.add(videoUri)
+                    } else {
+                        URIlist[5] = videoUri
+                    }
                 } else {
                     Log.e("CameraScreen", "Video recording failed: ${event.cause}")
                 }
