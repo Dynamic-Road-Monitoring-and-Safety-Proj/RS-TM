@@ -203,9 +203,7 @@ private fun captureVideo(
     videoCapture: VideoCapture<Recorder>,
     context: Context
 ): Pair<PendingRecording, Consumer<VideoRecordEvent> >{
-    val name = "CameraX-recording-" +
-            SimpleDateFormat(FILENAME_FORMAT, Locale.US)
-                .format(System.currentTimeMillis()) + ".mp4"
+    val name = "index:$index.mp4"
     val contentValues = ContentValues().apply {
         put(MediaStore.Video.Media.DISPLAY_NAME, name)
     }
