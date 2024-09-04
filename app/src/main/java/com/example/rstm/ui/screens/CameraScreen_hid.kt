@@ -11,6 +11,8 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
+import android.widget.Toast.LENGTH_LONG
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraSelector.LENS_FACING_BACK
 import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
@@ -105,7 +107,7 @@ fun CameraPreviewScreen(
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
 
-    val executor = Executors.newSingleThreadExecutor()
+    val executor = Executors.newCachedThreadPool()
     var captureListener : Consumer<VideoRecordEvent>
     LaunchedEffect(Unit) {
         executor.execute {
@@ -122,6 +124,7 @@ fun CameraPreviewScreen(
                         }
                     }
                     val result = captureVideo(videoCapture, context, URIlist)
+                    Toast.makeText(context, "starting",LENGTH_LONG).show()
                     captureListener = result.second
                     recording = result.first // Assign to the existing `recording`
                     onRecording = recording?.start(
@@ -129,8 +132,11 @@ fun CameraPreviewScreen(
                         captureListener
                     )
                     scope.launch {
-                        delay(1000)
+                        delay(10000)
+                        Toast.makeText(context, "stopping",LENGTH_LONG).show()
                         onRecording?.stop()
+                        Toast.makeText(context, "stopped",LENGTH_LONG).show()
+                        delay(10000)
                     }
                 }
             } catch (e: Exception) {
@@ -189,6 +195,35 @@ fun CameraPreviewScreen(
                 }
                 IconButton(
                     onClick = {
+                        scope.launch {
+                            onRecording?.stop() // Stop the current recording
+
+                            delay(1000) // Small delay to ensure stop completes
+
+                            if (URIlist.size >= 6) {
+                                val uri = URIlist[0]
+                                val contentResolver = context.contentResolver
+                                val deleted = contentResolver.delete(URIlist[0], null, null)
+                                if (deleted > 0) {
+                                    Log.d("DeleteVideo", "Video deleted successfully: $uri")
+                                } else {
+                                    Log.e("DeleteVideo", "Failed to delete video: $uri")
+                                }
+                                URIlist.removeAt(0)
+                            }
+
+                            // Add the last recorded video to the list (handled in the captureListener already)
+                            val result = captureVideo(videoCapture, context, URIlist)
+                            captureListener = result.second
+                            recording = result.first
+
+                            // Start a new recording
+                            onRecording = recording?.start(
+                                executor,
+                                captureListener
+                            )
+                        }
+
                         val currentTime = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(Date())
                         val dcimDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
                         val subfolder = File(dcimDirectory, "RS-TM")
@@ -205,7 +240,8 @@ fun CameraPreviewScreen(
 
                         val executionId = FFmpeg.executeAsync(
                             command
-                        ) { _, returnCode ->
+                        )
+                        { _, returnCode ->
                             when (returnCode) {
                                 RETURN_CODE_SUCCESS -> {
                                     Log.i(
@@ -230,7 +266,6 @@ fun CameraPreviewScreen(
                                 }
                             }
                         }
-
                     }
                 ) {
                     Icon(
@@ -257,7 +292,8 @@ private fun captureVideo(
     context: Context,
     URIlist: MutableList<Uri>
 ): Pair<PendingRecording, Consumer<VideoRecordEvent> >{
-    if(URIlist.size >= 6){
+    if(URIlist.size >= 6)
+    {
         for (i in 0..4){
             URIlist[i] = URIlist[i+1]
         }
@@ -304,7 +340,6 @@ private fun captureVideo(
         .withAudioEnabled()
 
     return Pair(recording, captureListener)
-
 //        .start(executor, captureListener)
 }
 
