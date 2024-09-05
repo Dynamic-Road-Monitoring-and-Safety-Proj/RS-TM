@@ -9,6 +9,8 @@ import android.content.Context
 import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
@@ -63,8 +65,11 @@ import com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL
 import com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS
 import com.arthenica.mobileffmpeg.FFmpeg
 import com.google.android.gms.location.FusedLocationProviderClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -83,7 +88,7 @@ fun CameraPreviewScreen(
     fusedLocationClient: FusedLocationProviderClient,
     Modifier: Modifier
 ) {
-    var URIlist : MutableList<Uri> = mutableListOf()
+    val URIlist : MutableList<Uri> = mutableListOf()
 
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -109,34 +114,53 @@ fun CameraPreviewScreen(
 
     val executor = Executors.newCachedThreadPool()
     var captureListener : Consumer<VideoRecordEvent>
+
     LaunchedEffect(Unit) {
         executor.execute {
             try {
-                while(true) {
-                    if(URIlist.size >= 6) {
-                        val uri = URIlist[0]
-                        val contentResolver = context.contentResolver
-                        val deleted = contentResolver.delete(URIlist[0], null, null)
-                        if (deleted > 0) {
-                            Log.d("DeleteVideo", "Video deleted successfully: $uri")
-                        } else {
-                            Log.e("DeleteVideo", "Failed to delete video: $uri")
+                while (true) {
+                    runBlocking {
+                        val job = scope.launch {
+                            if (URIlist.size >= 6) {
+                                val uri = URIlist[0]
+                                val contentResolver = context.contentResolver
+                                val deleted = contentResolver.delete(URIlist[0], null, null)
+                                if (deleted > 0) {
+                                    Log.d("DeleteVideo", "Video deleted successfully: $uri")
+                                } else {
+                                    Log.e("DeleteVideo", "Failed to delete video: $uri")
+                                }
+                            }
+                            val result = captureVideo(videoCapture, context, URIlist)
+
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "starting", Toast.LENGTH_LONG).show()
+                            }
+
+                            captureListener = result.second
+                            recording = result.first // Assign to the existing `recording`
+                            onRecording = recording?.start(
+                                executor,
+                                captureListener
+                            )
+
+                            delay(10000)
+
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "stopping", Toast.LENGTH_LONG).show()
+                            }
+
+                            onRecording?.stop()
+
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "stopped", Toast.LENGTH_LONG).show()
+                            }
+
+                            delay(10000)
                         }
-                    }
-                    val result = captureVideo(videoCapture, context, URIlist)
-                    Toast.makeText(context, "starting",LENGTH_LONG).show()
-                    captureListener = result.second
-                    recording = result.first // Assign to the existing `recording`
-                    onRecording = recording?.start(
-                        executor,
-                        captureListener
-                    )
-                    scope.launch {
-                        delay(10000)
-                        Toast.makeText(context, "stopping",LENGTH_LONG).show()
-                        onRecording?.stop()
-                        Toast.makeText(context, "stopped",LENGTH_LONG).show()
-                        delay(10000)
+
+                        // Wait for the coroutine to finish
+                        job.join()
                     }
                 }
             } catch (e: Exception) {
@@ -144,6 +168,7 @@ fun CameraPreviewScreen(
             }
         }
     }
+
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
