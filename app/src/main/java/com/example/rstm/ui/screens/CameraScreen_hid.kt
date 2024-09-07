@@ -66,6 +66,7 @@ import com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS
 import com.arthenica.mobileffmpeg.FFmpeg
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -116,10 +117,10 @@ fun CameraPreviewScreen(
     var captureListener : Consumer<VideoRecordEvent>
 
     LaunchedEffect(Unit) {
-        executor.execute {
+        scope.launch {
             try {
                 while (true) {
-                    val job = scope.launch {
+                    async {
                         if (URIlist.size >= 6) {
                             val uri = URIlist[0]
                             val contentResolver = context.contentResolver
@@ -155,11 +156,8 @@ fun CameraPreviewScreen(
                             Toast.makeText(context, "stopped", Toast.LENGTH_LONG).show()
                         }
 
-                        delay(10000)
-                    }
-
-                    // Wait for the coroutine to finish
-                    job.join()
+                        delay(1000)
+                    }.await()
                 }
             } catch (e: Exception) {
                 Log.e("CameraPreviewScreen", "Error starting video recording", e)
