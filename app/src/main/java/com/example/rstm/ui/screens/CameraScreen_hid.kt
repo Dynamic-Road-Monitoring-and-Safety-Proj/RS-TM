@@ -119,49 +119,47 @@ fun CameraPreviewScreen(
         executor.execute {
             try {
                 while (true) {
-                    runBlocking {
-                        val job = scope.launch {
-                            if (URIlist.size >= 6) {
-                                val uri = URIlist[0]
-                                val contentResolver = context.contentResolver
-                                val deleted = contentResolver.delete(URIlist[0], null, null)
-                                if (deleted > 0) {
-                                    Log.d("DeleteVideo", "Video deleted successfully: $uri")
-                                } else {
-                                    Log.e("DeleteVideo", "Failed to delete video: $uri")
-                                }
+                    val job = scope.launch {
+                        if (URIlist.size >= 6) {
+                            val uri = URIlist[0]
+                            val contentResolver = context.contentResolver
+                            val deleted = contentResolver.delete(URIlist[0], null, null)
+                            if (deleted > 0) {
+                                Log.d("DeleteVideo", "Video deleted successfully: $uri")
+                            } else {
+                                Log.e("DeleteVideo", "Failed to delete video: $uri")
                             }
-                            val result = captureVideo(videoCapture, context, URIlist)
+                        }
+                        val result = captureVideo(videoCapture, context, URIlist)
 
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(context, "starting", Toast.LENGTH_LONG).show()
-                            }
-
-                            captureListener = result.second
-                            recording = result.first // Assign to the existing `recording`
-                            onRecording = recording?.start(
-                                executor,
-                                captureListener
-                            )
-
-                            delay(10000)
-
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(context, "stopping", Toast.LENGTH_LONG).show()
-                            }
-
-                            onRecording?.stop()
-
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(context, "stopped", Toast.LENGTH_LONG).show()
-                            }
-
-                            delay(10000)
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "starting", Toast.LENGTH_LONG).show()
                         }
 
-                        // Wait for the coroutine to finish
-                        job.join()
+                        captureListener = result.second
+                        recording = result.first // Assign to the existing `recording`
+                        onRecording = recording?.start(
+                            executor,
+                            captureListener
+                        )
+
+                        delay(10000)
+
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "stopping", Toast.LENGTH_LONG).show()
+                        }
+
+                        onRecording?.stop()
+
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "stopped", Toast.LENGTH_LONG).show()
+                        }
+
+                        delay(10000)
                     }
+
+                    // Wait for the coroutine to finish
+                    job.join()
                 }
             } catch (e: Exception) {
                 Log.e("CameraPreviewScreen", "Error starting video recording", e)
