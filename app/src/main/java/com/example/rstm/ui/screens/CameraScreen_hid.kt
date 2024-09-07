@@ -90,7 +90,7 @@ fun CameraPreviewScreen(
     fusedLocationClient: FusedLocationProviderClient,
     Modifier: Modifier
 ) {
-    var URIlist : MutableList<Uri> = mutableListOf()
+    val URIlist : MutableList<Uri> = mutableListOf()
 
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current

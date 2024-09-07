@@ -5,10 +5,14 @@ import AccelerometerScreen
 import GyroscopeScreen
 import LightScreenComp
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.SensorManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,13 +44,15 @@ class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private val PermissionArray = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
+    private val permissionArray = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.CAMERA,
-        Manifest.permission.RECORD_AUDIO
+        Manifest.permission.RECORD_AUDIO,
+        Manifest.permission.MANAGE_MEDIA,
+        Manifest.permission.MANAGE_EXTERNAL_STORAGE
     )
     private val requestPermissionLauncher: ActivityResultLauncher<Array<String>> =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { PermissionsList ->
-            PermissionsList.entries.forEach{isGranted->
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionsList ->
+            permissionsList.entries.forEach{isGranted->
                 if (isGranted.value) {
                     Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
                 } else {
@@ -60,7 +66,7 @@ class MainActivity : ComponentActivity() {
         }
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun checkPermission() {
-        val permissionsToRequest = PermissionArray.filter { permission ->
+        val permissionsToRequest = permissionArray.filter { permission ->
             ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED
         }.toTypedArray()
 
@@ -70,7 +76,7 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, "All permissions are already granted", Toast.LENGTH_SHORT).show()
         }
     }
-    //TODO MAKE ABOVE LOCATION PART MODULAR after sensors are done
+
     private lateinit var sensorManager: SensorManager
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
