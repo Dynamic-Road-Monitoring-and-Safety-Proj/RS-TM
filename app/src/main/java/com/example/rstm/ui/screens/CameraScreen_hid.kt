@@ -65,6 +65,7 @@ import com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL
 import com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS
 import com.arthenica.mobileffmpeg.FFmpeg
 import com.google.android.gms.location.FusedLocationProviderClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -89,7 +90,7 @@ fun CameraPreviewScreen(
     fusedLocationClient: FusedLocationProviderClient,
     Modifier: Modifier
 ) {
-    val URIlist : MutableList<Uri> = mutableListOf()
+    var URIlist : MutableList<Uri> = mutableListOf()
 
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -139,6 +140,7 @@ fun CameraPreviewScreen(
 
                         captureListener = result.second
                         recording = result.first // Assign to the existing `recording`
+                        URIlist.addAll(result.third)
                         onRecording = recording?.start(
                             executor,
                             captureListener
@@ -259,6 +261,8 @@ fun CameraPreviewScreen(
                         val filter = URIlist.indices.joinToString(";") { "[${it}:v:0]" } + "concat=n=${URIlist.size}:v=1:a=0[outv]"
                         val command = "$inputs -filter_complex \"$filter\" -map \"[outv]\" $outputPath"
 
+                        Log.e("sdaf", "_____________________________${URIlist.size}    : $URIlist")
+
                         val executionId = FFmpeg.executeAsync(
                             command
                         )
@@ -312,7 +316,7 @@ private fun captureVideo(
     videoCapture: VideoCapture<Recorder>,
     context: Context,
     URIlist: MutableList<Uri>
-): Pair<PendingRecording, Consumer<VideoRecordEvent> >{
+): Triple<PendingRecording, Consumer<VideoRecordEvent>, MutableList<Uri> >{
     if(URIlist.size >= 6)
     {
         for (i in 0..4){
@@ -340,6 +344,9 @@ private fun captureVideo(
             is VideoRecordEvent.Finalize -> {
                 if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                     Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
+                    CoroutineScope(Dispatchers.Main).launch {
+                        Toast.makeText(context, "URI is ${event.outputResults.outputUri}", Toast.LENGTH_LONG).show()
+                    }
                     val videoUri = event.outputResults.outputUri
                     if (URIlist.size < 6) {
                         URIlist.add(videoUri)
@@ -360,7 +367,7 @@ private fun captureVideo(
         .prepareRecording(context, mediaStoreOutput)
         .withAudioEnabled()
 
-    return Pair(recording, captureListener)
+    return Triple(recording, captureListener, URIlist)
 //        .start(executor, captureListener)
 }
 
