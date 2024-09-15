@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -41,18 +42,21 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 
 class MainActivity : ComponentActivity() {
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var sensorManager: SensorManager // Declare sensorManager
+
+    // Permissions required for the app
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private val permissionArray = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
+    private val permissionArray = arrayOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.CAMERA,
-        Manifest.permission.RECORD_AUDIO,
-        Manifest.permission.MANAGE_MEDIA,
-        Manifest.permission.MANAGE_EXTERNAL_STORAGE
+        Manifest.permission.RECORD_AUDIO
     )
+
     private val requestPermissionLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionsList ->
-            permissionsList.entries.forEach{isGranted->
+            permissionsList.entries.forEach { isGranted ->
                 if (isGranted.value) {
                     Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
                 } else {
@@ -64,6 +68,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun checkPermission() {
         val permissionsToRequest = permissionArray.filter { permission ->
@@ -73,58 +78,105 @@ class MainActivity : ComponentActivity() {
         if (permissionsToRequest.isNotEmpty()) {
             requestPermissionLauncher.launch(permissionsToRequest)
         } else {
-            Toast.makeText(this, "All permissions are already granted", Toast.LENGTH_SHORT).show()
+            checkExternalStoragePermission()
         }
     }
 
-    private lateinit var sensorManager: SensorManager
+    // Request external storage permission
+    private fun checkExternalStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                requestStoragePermission()
+            } else {
+                Toast.makeText(this, "Manage external storage permission granted", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_CODE_STORAGE_PERMISSION)
+            } else {
+                Toast.makeText(this, "Write external storage permission granted", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // Request permission to manage all files (Android 11+)
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun requestStoragePermission() {
+        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+        intent.data = Uri.parse("package:$packageName")
+        startActivity(intent)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permissions granted, proceed with your app logic
+                Toast.makeText(this, "Storage permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                // Permissions denied, show a message or handle the situation accordingly
+                Toast.makeText(this, "Storage permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        checkPermission()
+        // Initialize sensorManager
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
+        checkPermission()
+
         enableEdgeToEdge()
-           setContent {
+
+        setContent {
             val navController = rememberNavController()
             RSTMTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavHost(navController = navController, startDestination = "home") {
                         composable("home") {
-                            HomeScreen(Modifier.padding(innerPadding),navController)
+                            HomeScreen(Modifier.padding(innerPadding), navController)
                         }
-                        composable("accelerometer"){
-                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager)//
+                        composable("accelerometer") {
+                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager)
                         }
-                        composable("gyro"){
-                            GyroscopeScreen(modifier = Modifier.padding(innerPadding),sensorManager)
+                        composable("gyro") {
+                            GyroscopeScreen(modifier = Modifier.padding(innerPadding), sensorManager)
                         }
-                        composable("magField"){
+                        composable("magField") {
                             MagFieldScreen(modifier = Modifier.padding(innerPadding), sensorManager)
                         }
-                        composable("lightScreen"){
+                        composable("lightScreen") {
                             LightScreenComp(modifier = Modifier.padding(innerPadding), sensorManager)
                         }
-                        composable("locationScreen"){
+                        composable("locationScreen") {
                             LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
                         }
-                        composable("cameraScreen"){
+                        composable("cameraScreen") {
                             CameraScreen(Modifier, this@MainActivity, applicationContext)
                         }
-                        composable("Detection & Collection Activated"){
-                            Activated(Modifier.padding(innerPadding), sensorManager, this@MainActivity ,applicationContext, fusedLocationClient)
+                        composable("Detection & Collection Activated") {
+                            Activated(Modifier.padding(innerPadding), sensorManager, this@MainActivity, applicationContext, fusedLocationClient)
                         }
-                        composable("Hidden View"){
-                            CameraPreviewScreen(Modifier = Modifier.padding(innerPadding), sensorManager = sensorManager,  fusedLocationClient = fusedLocationClient)
+                        composable("Hidden View") {
+                            CameraPreviewScreen(Modifier = Modifier.padding(innerPadding), sensorManager = sensorManager, fusedLocationClient = fusedLocationClient)
                         }
                     }
                 }
             }
         }
+    }
+
+    companion object {
+        const val REQUEST_CODE_STORAGE_PERMISSION = 101
     }
 }
 
