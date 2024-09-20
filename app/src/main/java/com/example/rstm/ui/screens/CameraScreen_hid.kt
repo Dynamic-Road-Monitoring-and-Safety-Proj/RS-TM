@@ -6,15 +6,13 @@ import LightScreenComp
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
+import android.database.ContentObserver
 import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Environment
-import android.os.Handler
-import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
-import android.widget.Toast.LENGTH_LONG
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraSelector.LENS_FACING_BACK
 import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
@@ -70,7 +68,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
@@ -90,7 +87,7 @@ fun CameraPreviewScreen(
     fusedLocationClient: FusedLocationProviderClient,
     Modifier: Modifier
 ) {
-    val URIlist : MutableList<Uri> = mutableListOf()
+    val uriList : MutableList<Uri> = mutableListOf()
 
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -122,17 +119,26 @@ fun CameraPreviewScreen(
             try {
                 while (true) {
                     async {
-                        if (URIlist.size >= 6) {
-                            val uri = URIlist[0]
+                        if (uriList.size >= 6) {
+                            val uri = uriList[0]
                             val contentResolver = context.contentResolver
-                            val deleted = contentResolver.delete(URIlist[0], null, null)
+                            val deleted = contentResolver.delete(uriList[0], null, null)
+                            val observer = object : ContentObserver(null) {
+                                override fun onChange(selfChange: Boolean, uri: Uri?) {
+                                    Log.d("ContentObserver", "Content at $uri has changed")
+                                }
+                            }
+                            contentResolver.registerContentObserver(uriList[0], false, observer)
+
+                            contentResolver.notifyChange(uriList[0], observer)
+
                             if (deleted > 0) {
                                 Log.d("DeleteVideo", "Video deleted successfully: $uri")
                             } else {
                                 Log.e("DeleteVideo", "Failed to delete video: $uri")
                             }
                         }
-                        val result = captureVideo(videoCapture, context, URIlist)
+                        val result = captureVideo(videoCapture, context, uriList)
 
                         withContext(Dispatchers.Main) {
                             Toast.makeText(context, "starting", Toast.LENGTH_LONG).show()
@@ -140,7 +146,7 @@ fun CameraPreviewScreen(
 
                         captureListener = result.second
                         recording = result.first // Assign to the existing `recording`
-                        URIlist.addAll(result.third)
+                        uriList.addAll(result.third)
                         onRecording = recording?.start(
                             executor,
                             captureListener
@@ -223,20 +229,20 @@ fun CameraPreviewScreen(
 
                             delay(1000) // Small delay to ensure stop completes
 
-                            if (URIlist.size >= 6) {
-                                val uri = URIlist[0]
+                            if (uriList.size >= 6) {
+                                val uri = uriList[0]
                                 val contentResolver = context.contentResolver
-                                val deleted = contentResolver.delete(URIlist[0], null, null)
+                                val deleted = contentResolver.delete(uriList[0], null, null)
                                 if (deleted > 0) {
                                     Log.d("DeleteVideo", "Video deleted successfully: $uri")
                                 } else {
                                     Log.e("DeleteVideo", "Failed to delete video: $uri")
                                 }
-                                URIlist.removeAt(0)
+                                uriList.removeAt(0)
                             }
 
                             // Add the last recorded video to the list (handled in the captureListener already)
-                            val result = captureVideo(videoCapture, context, URIlist)
+                            val result = captureVideo(videoCapture, context, uriList)
                             captureListener = result.second
                             recording = result.first
 
@@ -257,11 +263,11 @@ fun CameraPreviewScreen(
 
                         val outputPath = File(subfolder, "Video_$currentTime.mp4").absolutePath
 
-                        val inputs = URIlist.joinToString("|") { "-i $it" }
-                        val filter = URIlist.indices.joinToString(";") { "[${it}:v:0]" } + "concat=n=${URIlist.size}:v=1:a=0[outv]"
+                        val inputs = uriList.joinToString("|") { "-i $it" }
+                        val filter = uriList.indices.joinToString(";") { "[${it}:v:0]" } + "concat=n=${uriList.size}:v=1:a=0[outv]"
                         val command = "$inputs -filter_complex \"$filter\" -map \"[outv]\" $outputPath"
 
-                        Log.e("sdaf", "_____________________________${URIlist.size}    : $URIlist")
+                        Log.e("sdaf", "_____________________________${uriList.size}    : $uriList")
 
                         val executionId = FFmpeg.executeAsync(
                             command
