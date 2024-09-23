@@ -299,40 +299,37 @@ fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : Fuse
 private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>) {
     if (uriList.isNotEmpty()) {
         val oldestUri = uriList[0]
-        try {
-            // Check if the file exists
-            context.contentResolver.openInputStream(oldestUri)?.close() ?: run {
-                Log.e("DeleteVideo", "File does not exist: $oldestUri")
-                uriList.removeAt(0)
-                return
-            }
-
-            val deleted = context.contentResolver.delete(oldestUri, null, null)
-            if (deleted > 0) {
-                Log.d("DeleteVideo", "Deleted oldest video: $oldestUri")
-                uriList.removeAt(0)
-            } else {
-                Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
-            }
-        } catch (e: Exception) {
-            Log.e("DeleteVideo", "Error deleting video: $oldestUri", e)
+        val deleted = context.contentResolver.delete(oldestUri, null, null)
+        if (deleted > 0) {
+            Log.d("DeleteVideo", "Deleted oldest video: $oldestUri")
+            uriList.removeAt(0)
+        } else {
+            Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
         }
     }
 }
-
 private fun renameVideos(context: Context, uriList: MutableList<Uri>) {
     for (i in uriList.indices) {
         val oldUri = uriList[i]
-        val newName = "$i.mp4" // Rename each video sequentially from 0.mp4 to (n-1).mp4
+        val newName = "$i.mp4"
         val contentValues = ContentValues().apply {
             put(MediaStore.Video.Media.DISPLAY_NAME, newName)
         }
 
-        // Update the file name in the MediaStore
-        context.contentResolver.update(oldUri, contentValues, null, null)
-        Log.d("RenameVideos", "Renamed file: $oldUri to $newName")
+        try {
+            // Ensure the file exists before renaming
+            context.contentResolver.openInputStream(oldUri)?.close() ?: run {
+                Log.e("RenameVideos", "File does not exist, skipping rename: $oldUri")
+            }
+
+            context.contentResolver.update(oldUri, contentValues, null, null)
+            Log.d("RenameVideos", "Renamed file: $oldUri to $newName")
+        } catch (e: Exception) {
+            Log.e("RenameVideos", "Error renaming video: $oldUri", e)
+        }
     }
 }
+
 private fun findVideoUriByName(context: Context, fileName: String): Uri? {
     val projection = arrayOf(MediaStore.Video.Media._ID)
     val selection = "${MediaStore.Video.Media.DISPLAY_NAME} = ?"
