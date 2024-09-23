@@ -321,6 +321,21 @@ private fun renameVideos(context: Context, uriList: MutableList<Uri>) {
         Log.d("RenameVideos", "Renamed file: $oldUri to $newName")
     }
 }
+private fun findVideoUriByName(context: Context, fileName: String): Uri? {
+    val projection = arrayOf(MediaStore.Video.Media._ID)
+    val selection = "${MediaStore.Video.Media.DISPLAY_NAME} = ?"
+    val selectionArgs = arrayOf(fileName)
+
+    val queryUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+
+    context.contentResolver.query(queryUri, projection, selection, selectionArgs, null)?.use { cursor ->
+        if (cursor.moveToFirst()) {
+            val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID))
+            return Uri.withAppendedPath(queryUri, id.toString())
+        }
+    }
+    return null
+}
 
 @SuppressLint("MissingPermission")
 private fun captureVideo(
@@ -329,14 +344,25 @@ private fun captureVideo(
     URIlist: MutableList<Uri>
 ): Triple<PendingRecording, Consumer<VideoRecordEvent>, MutableList<Uri>> {
 
-    // When there are 6 videos, delete the oldest one and rename the others
+    val name: String
+
     if (URIlist.size >= 6) {
+        // Circular buffer: when there are 6 videos, delete the oldest and rename the others
         deleteOldestVideo(context, URIlist)
-        renameVideos(context, URIlist)
+        renameVideos(context, URIlist)  // Renames from 0.mp4 to 4.mp4
+        name = "5.mp4"  // New video will be named "5.mp4"
+    } else {
+        // If the list size is less than 6, name videos sequentially from "0.mp4" to "4.mp4"
+        name = "${URIlist.size}.mp4"
     }
 
-    // After renaming, we will create a new video with name "5.mp4" (6th file)
-    val name = "5.mp4" // The 6th video after renaming the rest
+    // if a video with the same name already exists and delete it
+    val existingUri = findVideoUriByName(context, name)
+    if (existingUri != null) {
+        context.contentResolver.delete(existingUri, null, null)  // Delete existing file
+        Log.d("CameraScreen", "Deleted existing video: $name")
+    }
+
     val contentValues = ContentValues().apply {
         put(MediaStore.Video.Media.DISPLAY_NAME, name)
     }
@@ -362,7 +388,7 @@ private fun captureVideo(
                     }
 
                     val videoUri = event.outputResults.outputUri
-                    // Now add this new video to the list as the 6th file
+                    // Now add this new video to the list
                     URIlist.add(videoUri)
                 } else {
                     Log.e("CameraScreen", "Video recording failed: ${event.cause}")
