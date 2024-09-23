@@ -119,35 +119,14 @@ fun CameraPreviewScreen(
             try {
                 while (true) {
                     async {
-
-                        if (uriList.size >= 6) {
-                            val uri = uriList[0]
-                            val contentResolver = context.contentResolver
-                            if (uriList.isNotEmpty()) {
-                                val uri = uriList[0]
-                                if (uri != null) {
-                                    val deleted = contentResolver.delete(uri, null, null)
-                                    if (deleted > 0) {
-                                        Log.d("DeleteVideo", "Video deleted successfully: $uri")
-                                        uriList.removeAt(0)
-                                    } else {
-                                        Log.e("DeleteVideo", "Failed to delete video: $uri")
-                                    }
-                                } else {
-                                    Log.e("DeleteVideo", "Invalid URI: $uri")
-                                }
-                            }
-
-                        }
                         val result = captureVideo(videoCapture, context, uriList)
 
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "starting", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "starting", Toast.LENGTH_SHORT).show()
                         }
 
                         captureListener = result.second
-                        recording = result.first // Assign to the existing `recording`
-                        uriList.addAll(result.third)
+                        recording = result.first
                         onRecording = recording?.start(
                             executor,
                             captureListener
@@ -156,13 +135,13 @@ fun CameraPreviewScreen(
                         delay(10000)
 
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "stopping", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "stopping", Toast.LENGTH_SHORT).show()
                         }
 
                         onRecording?.stop()
 
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "stopped", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "stopped", Toast.LENGTH_SHORT).show()
                         }
 
                         delay(1000)
@@ -317,29 +296,55 @@ fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : Fuse
     LightScreenComp(modifier = modifier, sensorManager = sensorManager )
     LocationScreen(fusedLocationClient = fusedLocationClient)
 }
+private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>) {
+    if (uriList.isNotEmpty()) {
+        val oldestUri = uriList[0]
+        val deleted = context.contentResolver.delete(oldestUri, null, null)
+        if (deleted > 0) {
+            Log.d("DeleteVideo", "Deleted oldest video: $oldestUri")
+            uriList.removeAt(0)
+        } else {
+            Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
+        }
+    }
+}
+private fun renameVideos(context: Context, uriList: MutableList<Uri>) {
+    for (i in uriList.indices) {
+        val oldUri = uriList[i]
+        val newName = "$i.mp4" // Rename each video sequentially from 0.mp4 to (n-1).mp4
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Video.Media.DISPLAY_NAME, newName)
+        }
+
+        // Update the file name in the MediaStore
+        context.contentResolver.update(oldUri, contentValues, null, null)
+        Log.d("RenameVideos", "Renamed file: $oldUri to $newName")
+    }
+}
 
 @SuppressLint("MissingPermission")
 private fun captureVideo(
     videoCapture: VideoCapture<Recorder>,
     context: Context,
     URIlist: MutableList<Uri>
-): Triple<PendingRecording, Consumer<VideoRecordEvent>, MutableList<Uri> >{
-    if(URIlist.size >= 6)
-    {
-        for (i in 0..4){
-            URIlist[i] = URIlist[i+1]
-        }
-        URIlist.removeAt(5)
-    }
-    val index = URIlist.size%6
+): Triple<PendingRecording, Consumer<VideoRecordEvent>, MutableList<Uri>> {
 
-    //names will be like 0.mp4 to 5.mp4
-    val name = "$index.mp4"
+    // When there are 6 videos, delete the oldest one and rename the others
+    if (URIlist.size >= 6) {
+        deleteOldestVideo(context, URIlist)
+        renameVideos(context, URIlist)
+    }
+
+    // After renaming, we will create a new video with name "5.mp4" (6th file)
+    val name = "5.mp4" // The 6th video after renaming the rest
     val contentValues = ContentValues().apply {
         put(MediaStore.Video.Media.DISPLAY_NAME, name)
     }
-    val mediaStoreOutput = MediaStoreOutputOptions.Builder(context.contentResolver,
-        MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+
+    val mediaStoreOutput = MediaStoreOutputOptions.Builder(
+        context.contentResolver,
+        MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+    )
         .setContentValues(contentValues)
         .build()
 
@@ -351,15 +356,14 @@ private fun captureVideo(
             is VideoRecordEvent.Finalize -> {
                 if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                     Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
+
                     CoroutineScope(Dispatchers.Main).launch {
                         Toast.makeText(context, "URI is ${event.outputResults.outputUri}", Toast.LENGTH_LONG).show()
                     }
+
                     val videoUri = event.outputResults.outputUri
-                    if (URIlist.size < 6) {
-                        URIlist.add(videoUri)
-                    } else {
-                        URIlist[5] = videoUri
-                    }
+                    // Now add this new video to the list as the 6th file
+                    URIlist.add(videoUri)
                 } else {
                     Log.e("CameraScreen", "Video recording failed: ${event.cause}")
                 }
@@ -375,8 +379,8 @@ private fun captureVideo(
         .withAudioEnabled()
 
     return Triple(recording, captureListener, URIlist)
-//        .start(executor, captureListener)
 }
+
 
 private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
     suspendCoroutine { continuation ->
