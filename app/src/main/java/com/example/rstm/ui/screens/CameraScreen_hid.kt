@@ -119,24 +119,25 @@ fun CameraPreviewScreen(
             try {
                 while (true) {
                     async {
+
                         if (uriList.size >= 6) {
                             val uri = uriList[0]
                             val contentResolver = context.contentResolver
-                            val deleted = contentResolver.delete(uriList[0], null, null)
-                            val observer = object : ContentObserver(null) {
-                                override fun onChange(selfChange: Boolean, uri: Uri?) {
-                                    Log.d("ContentObserver", "Content at $uri has changed")
+                            if (uriList.isNotEmpty()) {
+                                val uri = uriList[0]
+                                if (uri != null) {
+                                    val deleted = contentResolver.delete(uri, null, null)
+                                    if (deleted > 0) {
+                                        Log.d("DeleteVideo", "Video deleted successfully: $uri")
+                                        uriList.removeAt(0)
+                                    } else {
+                                        Log.e("DeleteVideo", "Failed to delete video: $uri")
+                                    }
+                                } else {
+                                    Log.e("DeleteVideo", "Invalid URI: $uri")
                                 }
                             }
-                            contentResolver.registerContentObserver(uriList[0], false, observer)
 
-                            contentResolver.notifyChange(uriList[0], observer)
-
-                            if (deleted > 0) {
-                                Log.d("DeleteVideo", "Video deleted successfully: $uri")
-                            } else {
-                                Log.e("DeleteVideo", "Failed to delete video: $uri")
-                            }
                         }
                         val result = captureVideo(videoCapture, context, uriList)
 
