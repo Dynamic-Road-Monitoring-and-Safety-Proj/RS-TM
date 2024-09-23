@@ -80,6 +80,27 @@ import kotlin.coroutines.suspendCoroutine
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
+private fun initializeUriList(context: Context, uriList: MutableList<Uri>) {
+    // Clear the list to avoid duplicates
+    uriList.clear()
+
+    // Check for files named 0.mp4 to 5.mp4
+    for (i in 0..5) {
+        val fileName = "$i.mp4"
+        val fileUri = findVideoUriByName(context, fileName)
+
+        // If a file exists, add it to the uriList
+        if (fileUri != null) {
+            uriList.add(fileUri)
+            Log.d("InitializeUriList", "Added existing video: $fileName")
+        }
+    }
+
+    // Log the current state of the list for debugging
+    Log.d("InitializeUriList", "URI list initialized with ${uriList.size} items.")
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CameraPreviewScreen(
@@ -92,6 +113,7 @@ fun CameraPreviewScreen(
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
+    initializeUriList(context, uriList)
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
     var recording by remember { mutableStateOf<PendingRecording?>(null) }
     var onRecording by remember { mutableStateOf<Recording?>(null) }
@@ -351,7 +373,7 @@ private fun captureVideo(
     videoCapture: VideoCapture<Recorder>,
     context: Context,
     URIlist: MutableList<Uri>
-): Triple<PendingRecording, Consumer<VideoRecordEvent>, MutableList<Uri>> {
+): Pair<PendingRecording, Consumer<VideoRecordEvent>> {
 
     val name: String
 
@@ -413,7 +435,7 @@ private fun captureVideo(
         .prepareRecording(context, mediaStoreOutput)
         .withAudioEnabled()
 
-    return Triple(recording, captureListener, URIlist)
+    return Pair(recording, captureListener)
 }
 
 
