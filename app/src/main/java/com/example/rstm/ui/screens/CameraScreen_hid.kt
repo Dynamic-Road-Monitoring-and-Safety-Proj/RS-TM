@@ -299,15 +299,27 @@ fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : Fuse
 private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>) {
     if (uriList.isNotEmpty()) {
         val oldestUri = uriList[0]
-        val deleted = context.contentResolver.delete(oldestUri, null, null)
-        if (deleted > 0) {
-            Log.d("DeleteVideo", "Deleted oldest video: $oldestUri")
-            uriList.removeAt(0)
-        } else {
-            Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
+        try {
+            // Check if the file exists
+            context.contentResolver.openInputStream(oldestUri)?.close() ?: run {
+                Log.e("DeleteVideo", "File does not exist: $oldestUri")
+                uriList.removeAt(0)
+                return
+            }
+
+            val deleted = context.contentResolver.delete(oldestUri, null, null)
+            if (deleted > 0) {
+                Log.d("DeleteVideo", "Deleted oldest video: $oldestUri")
+                uriList.removeAt(0)
+            } else {
+                Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
+            }
+        } catch (e: Exception) {
+            Log.e("DeleteVideo", "Error deleting video: $oldestUri", e)
         }
     }
 }
+
 private fun renameVideos(context: Context, uriList: MutableList<Uri>) {
     for (i in uriList.indices) {
         val oldUri = uriList[i]
