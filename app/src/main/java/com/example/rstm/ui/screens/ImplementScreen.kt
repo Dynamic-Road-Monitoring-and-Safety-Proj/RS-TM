@@ -1,23 +1,11 @@
-package com.example.rstm.ui.screens
-
-import AccelerometerScreen
-import GyroscopeScreen
-import LightScreenComp
-import android.annotation.SuppressLint
-import android.content.ContentValues
-import android.content.Context
-import android.database.ContentObserver
 import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Environment
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraSelector.LENS_FACING_BACK
 import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.PendingRecording
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -35,7 +23,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Refresh
@@ -43,10 +35,13 @@ import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -56,14 +51,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
 import com.arthenica.mobileffmpeg.Config
 import com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL
 import com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS
 import com.arthenica.mobileffmpeg.FFmpeg
+import com.example.rstm.ui.screens.LocationScreen
+import com.example.rstm.viewModels.ImplementVM
+import com.example.rstm.viewModels.RecordingState
 import com.google.android.gms.location.FusedLocationProviderClient
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -74,45 +70,22 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.Executors
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
-
-
-private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
-
-private fun initializeUriList(context: Context, uriList: MutableList<Uri>) {
-    // Clear the list to avoid duplicates
-    uriList.clear()
-
-    // Check for files named 0.mp4 to 5.mp4
-    for (i in 0..5) {
-        val fileName = "$i.mp4"
-        val fileUri = findVideoUriByName(context, fileName)
-
-        // If a file exists, add it to the uriList
-        if (fileUri != null) {
-            uriList.add(fileUri)
-            Log.d("InitializeUriList", "Added existing video: $fileName")
-        }
-    }
-
-    Log.d("InitializeUriList", "URI list initialized with ${uriList.size} items.")
-}
-
+import com.example.rstm.model.ImplementRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraPreviewScreen(
-    sensorManager: SensorManager,
-    fusedLocationClient: FusedLocationProviderClient,
+fun CameraPreviewScreenC(
+    viewModel: ImplementVM,
     Modifier: Modifier
 ) {
-    val uriList : MutableList<Uri> = mutableListOf()
+    val uriList by viewModel.uriList.observeAsState(emptyList())
 
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
-    initializeUriList(context, uriList)
+
+    repository.initializeUriList(context) // move to VM
+
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
     var recording by remember { mutableStateOf<PendingRecording?>(null) }
     var onRecording by remember { mutableStateOf<Recording?>(null) }
@@ -179,7 +152,7 @@ fun CameraPreviewScreen(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 0.dp,
         sheetContent = {
-            SensorSheetContent2(sensorManager = sensorManager, fusedLocationClient = fusedLocationClient, modifier = Modifier)
+            SensorSheetContent2C(sensorManager = sensorManager, fusedLocationClient = fusedLocationClient, modifier = Modifier)
         }
     ) { padding ->
         Box(
@@ -255,7 +228,8 @@ fun CameraPreviewScreen(
                         }
 
                         val currentTime = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(Date())
-                        val dcimDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+                        val dcimDirectory = Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DCIM)
                         val subfolder = File(dcimDirectory, "RS-TM")
                         // Ensure the directory exists
                         if (!subfolder.exists()) {
@@ -311,136 +285,9 @@ fun CameraPreviewScreen(
 }
 
 @Composable
-fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
+fun SensorSheetContent2C(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
     AccelerometerScreen(modifier = modifier, sensorManager)
     LightScreenComp(modifier = modifier, sensorManager = sensorManager )
     LocationScreen(fusedLocationClient = fusedLocationClient)
 }
-private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>) {
-    if (uriList.isNotEmpty()) {
-        val oldestUri = uriList[0]
-        val deleted = context.contentResolver.delete(oldestUri, null, null)
-        if (deleted > 0) {
-            Log.d("DeleteVideo", "Deleted oldest video: $oldestUri")
-            uriList.removeAt(0)
-        } else {
-            Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
-        }
-    }
-}
-private fun renameVideos(context: Context, uriList: MutableList<Uri>) {
-    for (i in uriList.indices) {
-        val oldUri = uriList[i]
-        val newName = "$i.mp4"
-        val contentValues = ContentValues().apply {
-            put(MediaStore.Video.Media.DISPLAY_NAME, newName)
-        }
-
-        try {
-            // Ensure the file exists before renaming
-            context.contentResolver.openInputStream(oldUri)?.close() ?: run {
-                Log.e("RenameVideos", "File does not exist, skipping rename: $oldUri")
-            }
-
-            context.contentResolver.update(oldUri, contentValues, null, null)
-            Log.d("RenameVideos", "Renamed file: $oldUri to $newName")
-        } catch (e: Exception) {
-            Log.e("RenameVideos", "Error renaming video: $oldUri", e)
-        }
-    }
-}
-
-private fun findVideoUriByName(context: Context, fileName: String): Uri? {
-    val projection = arrayOf(MediaStore.Video.Media._ID)
-    val selection = "${MediaStore.Video.Media.DISPLAY_NAME} = ?"
-    val selectionArgs = arrayOf(fileName)
-
-    val queryUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-
-    context.contentResolver.query(queryUri, projection, selection, selectionArgs, null)?.use { cursor ->
-        if (cursor.moveToFirst()) {
-            val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID))
-            return Uri.withAppendedPath(queryUri, id.toString())
-        }
-    }
-    return null
-}
-
-@SuppressLint("MissingPermission")
-private fun captureVideo(
-    videoCapture: VideoCapture<Recorder>,
-    context: Context,
-    URIlist: MutableList<Uri>
-): Pair<PendingRecording, Consumer<VideoRecordEvent>> {
-
-    val name: String
-
-    if (URIlist.size >= 6) {
-        // Circular buffer: when there are 6 videos, delete the oldest and rename the others
-        deleteOldestVideo(context, URIlist)
-        renameVideos(context, URIlist)  // Renames from 0.mp4 to 4.mp4
-        name = "5.mp4"  // New video will be named "5.mp4"
-    } else {
-        // If the list size is less than 6, name videos sequentially from "0.mp4" to "4.mp4"
-        name = "${URIlist.size}.mp4"
-    }
-
-    val existingUri = findVideoUriByName(context, name)
-    if (existingUri != null) {
-        context.contentResolver.delete(existingUri, null, null)  // Delete existing file
-        Log.d("CameraScreen", "Deleted existing video: $name")
-    }
-
-    val contentValues = ContentValues().apply {
-        put(MediaStore.Video.Media.DISPLAY_NAME, name)
-    }
-
-    val mediaStoreOutput = MediaStoreOutputOptions.Builder(
-        context.contentResolver,
-        MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-    )
-        .setContentValues(contentValues)
-        .build()
-
-    val captureListener = Consumer<VideoRecordEvent> { event ->
-        when (event) {
-            is VideoRecordEvent.Start -> {
-                Log.d("CameraScreen", "Recording started")
-            }
-            is VideoRecordEvent.Finalize -> {
-                if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
-                    Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
-
-                    CoroutineScope(Dispatchers.Main).launch {
-                        Toast.makeText(context, "URI is ${event.outputResults.outputUri}", Toast.LENGTH_LONG).show()
-                    }
-
-                    val videoUri = event.outputResults.outputUri
-                    // Now add this new video to the list
-                    URIlist.add(videoUri)
-                } else {
-                    Log.e("CameraScreen", "Video recording failed: ${event.cause}")
-                }
-            }
-            else -> {
-                // Handle other events if needed
-            }
-        }
-    }
-
-    val recording = videoCapture.output
-        .prepareRecording(context, mediaStoreOutput)
-        .withAudioEnabled()
-
-    return Pair(recording, captureListener)
-}
-
-private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
-    suspendCoroutine { continuation ->
-        ProcessCameraProvider.getInstance(this).also { cameraProvider ->
-            cameraProvider.addListener({
-                continuation.resume(cameraProvider.get())
-            }, ContextCompat.getMainExecutor(this))
-        }
-    }
