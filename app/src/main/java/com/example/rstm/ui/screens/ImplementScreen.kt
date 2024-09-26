@@ -84,7 +84,6 @@ fun CameraPreviewScreenC(
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
 
-    repository.initializeUriList(context) // move to VM
 
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
     var recording by remember { mutableStateOf<PendingRecording?>(null) }

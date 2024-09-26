@@ -1,5 +1,3 @@
-package com.example.rstm.model
-
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
@@ -20,10 +18,16 @@ import kotlinx.coroutines.launch
 import java.util.function.Consumer
 
 class ImplementRepository {
+
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
-    val uriList: LiveData<List<Uri>> get()= _uriList
+    val uriList: LiveData<List<Uri>> get() = _uriList
 
+    // Helper to update _uriList safely
+    private fun updateUriList(newList: List<Uri>) {
+        _uriList.value = newList
+    }
 
+    // Find the URI of the video file by name
     private fun findVideoUriByName(context: Context, fileName: String): Uri? {
         val projection = arrayOf(MediaStore.Video.Media._ID)
         val selection = "${MediaStore.Video.Media.DISPLAY_NAME} = ?"
@@ -40,79 +44,77 @@ class ImplementRepository {
         return null
     }
 
+    // Initialize the URI list by checking for existing video files
     fun initializeUriList(context: Context) {
-        // Clear the list to avoid duplicates
-        uriList.clear()
+        val initialList = mutableListOf<Uri>()
 
-        // Check for files named 0.mp4 to 5.mp4
         for (i in 0..5) {
             val fileName = "$i.mp4"
             val fileUri = findVideoUriByName(context, fileName)
-
-            // If a file exists, add it to the uriList
             if (fileUri != null) {
-                uriList.add(fileUri)
+                initialList.add(fileUri)
                 Log.d("InitializeUriList", "Added existing video: $fileName")
             }
         }
 
-        Log.d("InitializeUriList", "URI list initialized with ${uriList.size} items.")
+        updateUriList(initialList)  // Update LiveData with the initialized list
+        Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
-    private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>) {
-        if (uriList.isNotEmpty()) {
-            val oldestUri = uriList[0]
+
+    // Delete the oldest video from the list
+    private fun deleteOldestVideo(context: Context) {
+        val currentList = _uriList.value?.toMutableList() ?: mutableListOf()
+        if (currentList.isNotEmpty()) {
+            val oldestUri = currentList[0]
             val deleted = context.contentResolver.delete(oldestUri, null, null)
             if (deleted > 0) {
                 Log.d("DeleteVideo", "Deleted oldest video: $oldestUri")
-                uriList.removeAt(0)
+                currentList.removeAt(0)
+                updateUriList(currentList)
             } else {
                 Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
             }
         }
     }
-    private fun renameVideos(context: Context, uriList: MutableList<Uri>) {
-        for (i in uriList.indices) {
-            val oldUri = uriList[i]
+
+    // Rename the videos sequentially after deleting the oldest one
+    private fun renameVideos(context: Context) {
+        val currentList = _uriList.value?.toMutableList() ?: mutableListOf()
+        for (i in currentList.indices) {
+            val oldUri = currentList[i]
             val newName = "$i.mp4"
             val contentValues = ContentValues().apply {
                 put(MediaStore.Video.Media.DISPLAY_NAME, newName)
             }
 
             try {
-                // Ensure the file exists before renaming
-                context.contentResolver.openInputStream(oldUri)?.close() ?: run {
-                    Log.e("RenameVideos", "File does not exist, skipping rename: $oldUri")
-                }
-
                 context.contentResolver.update(oldUri, contentValues, null, null)
                 Log.d("RenameVideos", "Renamed file: $oldUri to $newName")
             } catch (e: Exception) {
                 Log.e("RenameVideos", "Error renaming video: $oldUri", e)
             }
         }
+        updateUriList(currentList)  // Update LiveData after renaming
     }
 
+    // Capture video and manage circular buffer
     @SuppressLint("MissingPermission")
     fun captureVideo(videoCapture: VideoCapture<Recorder>, context: Context): Pair<PendingRecording, Consumer<VideoRecordEvent>> {
+        val currentList = _uriList.value?.toMutableList() ?: mutableListOf()
         val name: String
 
-        if (uriList.size >= 6) {
-            // Circular buffer: when there are 6 videos, delete the oldest and rename the others
-            deleteOldestVideo(context, uriList)
-            renameVideos(
-                context,
-                uriList
-            )  // Renames from 0.mp4 to 4.mp4
-            name = "5.mp4"  // New video will be named "5.mp4"
+        if (currentList.size >= 6) {
+            deleteOldestVideo(context)  // Delete oldest video
+            renameVideos(context)  // Rename remaining videos
+            name = "5.mp4"  // Name the new video "5.mp4"
         } else {
-            // If the list size is less than 6, name videos sequentially from "0.mp4" to "4.mp4"
-            name = "${uriList.size}.mp4"
+            name = "${currentList.size}.mp4"  // Name new video sequentially
         }
 
-        // if a video with the same name already exists and delete it
+        // Delete any existing file with the same name
         val existingUri = findVideoUriByName(context, name)
         if (existingUri != null) {
-            context.contentResolver.delete(existingUri, null, null)  // Delete existing file
+            context.contentResolver.delete(existingUri, null, null)
             Log.d("CameraScreen", "Deleted existing video: $name")
         }
 
@@ -135,14 +137,13 @@ class ImplementRepository {
                 is VideoRecordEvent.Finalize -> {
                     if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                         Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
-
                         CoroutineScope(Dispatchers.Main).launch {
                             Toast.makeText(context, "URI is ${event.outputResults.outputUri}", Toast.LENGTH_LONG).show()
                         }
 
                         val videoUri = event.outputResults.outputUri
-                        // Now add this new video to the list
-                        uriList.add(videoUri)
+                        currentList.add(videoUri)  // Add new URI to the list
+                        updateUriList(currentList)  // Update LiveData with new list
                     } else {
                         Log.e("CameraScreen", "Video recording failed: ${event.cause}")
                     }

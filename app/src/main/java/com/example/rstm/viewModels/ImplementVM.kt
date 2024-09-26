@@ -35,7 +35,6 @@ class ImplementVM(
     // State management
     private val _lensFacing = MutableLiveData(CameraSelector.LENS_FACING_BACK)
     val lensFacing = _lensFacing
-
     private val _recordingState = MutableLiveData<RecordingState>()
     val recordingState: LiveData<RecordingState> = _recordingState
 
