@@ -386,7 +386,6 @@ private fun captureVideo(
         name = "${URIlist.size}.mp4"
     }
 
-    // if a video with the same name already exists and delete it
     val existingUri = findVideoUriByName(context, name)
     if (existingUri != null) {
         context.contentResolver.delete(existingUri, null, null)  // Delete existing file

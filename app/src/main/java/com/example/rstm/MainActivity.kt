@@ -3,6 +3,7 @@ package com.example.rstm
 
 import AccelerometerScreen
 import GyroscopeScreen
+import ImplementScreen
 import LightScreenComp
 import android.Manifest
 import android.content.Intent
@@ -38,6 +39,7 @@ import com.example.rstm.ui.screens.HomeScreen
 import com.example.rstm.ui.screens.LocationScreen
 import com.example.rstm.ui.screens.MagFieldScreen
 import com.example.rstm.ui.theme.RSTMTheme
+import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 
@@ -117,6 +119,7 @@ class MainActivity : ComponentActivity() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
         checkPermission()
+        val implementVM = ImplementVM(sensorManager, fusedLocationClient)
 
         enableEdgeToEdge()
 
@@ -151,6 +154,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("Hidden View") {
                             CameraPreviewScreen(Modifier = Modifier.padding(innerPadding), sensorManager = sensorManager, fusedLocationClient = fusedLocationClient)
+                        }
+                        composable("Implement Screen"){
+                            ImplementScreen(viewModel = implementVM,modifier = Modifier.padding(innerPadding))
                         }
                     }
                 }
