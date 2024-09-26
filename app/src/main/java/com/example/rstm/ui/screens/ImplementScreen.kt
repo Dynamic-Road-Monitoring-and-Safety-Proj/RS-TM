@@ -25,7 +25,6 @@ import com.example.rstm.viewModels.ImplementVM
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Observe ViewModel state
     val lensFacing by viewModel.lensFacing.observeAsState(CameraSelector.LENS_FACING_BACK)
     val recordingState by viewModel.recordingState.observeAsState()
     val uriList by viewModel.uriList.observeAsState(emptyList())
