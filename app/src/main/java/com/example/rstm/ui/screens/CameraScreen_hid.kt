@@ -96,7 +96,6 @@ private fun initializeUriList(context: Context, uriList: MutableList<Uri>) {
         }
     }
 
-    // Log the current state of the list for debugging
     Log.d("InitializeUriList", "URI list initialized with ${uriList.size} items.")
 }
 
