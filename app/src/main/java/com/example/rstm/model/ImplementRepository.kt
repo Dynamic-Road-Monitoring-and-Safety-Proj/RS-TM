@@ -12,13 +12,17 @@ import androidx.camera.video.PendingRecording
 import androidx.camera.video.Recorder
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.function.Consumer
 
 class ImplementRepository {
-    private val uriList: MutableList<Uri> = mutableListOf()
+    private val _uriList = MutableLiveData<List<Uri>>(emptyList())
+    val uriList: LiveData<List<Uri>> get()= _uriList
+
 
     private fun findVideoUriByName(context: Context, fileName: String): Uri? {
         val projection = arrayOf(MediaStore.Video.Media._ID)
@@ -155,6 +159,4 @@ class ImplementRepository {
 
         return Pair(recording, captureListener)
     }
-
-
 }

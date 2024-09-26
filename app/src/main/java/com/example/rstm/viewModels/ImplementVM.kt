@@ -19,6 +19,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.rstm.model.ImplementRepository
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.launch
 import java.io.File
@@ -26,8 +27,9 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class ImplementVM(
-    private val sensorManager: SensorManager,
-    private val fusedLocationClient: FusedLocationProviderClient
+    sensorManager: SensorManager,
+    fusedLocationClient: FusedLocationProviderClient,
+    implementRepo : ImplementRepository
 ) : ViewModel() {
 
     // State management
@@ -37,8 +39,7 @@ class ImplementVM(
     private val _recordingState = MutableLiveData<RecordingState>()
     val recordingState: LiveData<RecordingState> = _recordingState
 
-    private val _uriList = MutableLiveData<List<Uri>>(emptyList())
-    val uriList: LiveData<List<Uri>> = _uriList
+    val uriList: LiveData<List<Uri>> = implementRepo.uriList
 
     private var currentRecording: Recording? = null
 

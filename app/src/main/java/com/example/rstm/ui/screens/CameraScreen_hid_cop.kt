@@ -99,10 +99,9 @@ private fun initializeUriList(context: Context, uriList: MutableList<Uri>) {
     Log.d("InitializeUriList", "URI list initialized with ${uriList.size} items.")
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraPreviewScreen(
+fun CameraPreviewScreenC(
     sensorManager: SensorManager,
     fusedLocationClient: FusedLocationProviderClient,
     Modifier: Modifier
@@ -179,7 +178,7 @@ fun CameraPreviewScreen(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 0.dp,
         sheetContent = {
-            SensorSheetContent2(sensorManager = sensorManager, fusedLocationClient = fusedLocationClient, modifier = Modifier)
+            SensorSheetContent2C(sensorManager = sensorManager, fusedLocationClient = fusedLocationClient, modifier = Modifier)
         }
     ) { padding ->
         Box(
@@ -311,7 +310,7 @@ fun CameraPreviewScreen(
 }
 
 @Composable
-fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
+fun SensorSheetContent2C(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
     AccelerometerScreen(modifier = modifier, sensorManager)
     LightScreenComp(modifier = modifier, sensorManager = sensorManager )
