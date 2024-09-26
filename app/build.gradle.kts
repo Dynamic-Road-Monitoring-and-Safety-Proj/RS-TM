@@ -77,7 +77,8 @@ dependencies {
     implementation (libs.androidx.navigation.fragment.ktx)
     implementation (libs.androidx.navigation.ui.ktx)
     implementation (libs.mobile.ffmpeg.full)
-    implementation ("androidx.compose.runtime:runtime-livedata:")
+
+    implementation(libs.androidx.runtime.livedata)
 
     implementation(libs.androidx.room.runtime)
     annotationProcessor(libs.androidx.room.compiler)

@@ -107,7 +107,7 @@ class ImplementVM(
 
 
 
-    private fun stopRecording() {
+    fun stopRecording() {
         currentRecording?.stop()
         _recordingState.value = RecordingState.Stopped
     }
