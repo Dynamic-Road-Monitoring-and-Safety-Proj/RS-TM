@@ -3,6 +3,8 @@ import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraProvider
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraSelector.LENS_FACING_BACK
 import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
@@ -51,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.util.Consumer
 import com.arthenica.mobileffmpeg.Config
 import com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL
@@ -70,7 +73,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.Executors
-import com.example.rstm.model.ImplementRepository
+
+private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,7 +88,6 @@ fun CameraPreviewScreenC(
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
 
-
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
     var recording by remember { mutableStateOf<PendingRecording?>(null) }
     var onRecording by remember { mutableStateOf<Recording?>(null) }
@@ -97,9 +100,12 @@ fun CameraPreviewScreenC(
     val videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
 
     LaunchedEffect(lensFacing) {
-        val cameraProvider = context.getCameraProvider()
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraxSelector, videoCapture)
+        viewModel.fetchCameraProvider(
+            context = context,
+            lifecycleOwner,
+            cameraxSelector,
+            videoCapture
+        )
     }
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
