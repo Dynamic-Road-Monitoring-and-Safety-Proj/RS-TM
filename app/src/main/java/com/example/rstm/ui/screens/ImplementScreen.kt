@@ -118,7 +118,7 @@ fun CameraPreviewScreenC(
             try {
                 while (true) {
                     async {
-                        val result = captureVideo(videoCapture, context, uriList)
+                        val result = viewModel.captureVideo(videoCapture, context, uriList)
 
                         withContext(Dispatchers.Main) {
                             Toast.makeText(context, "starting", Toast.LENGTH_SHORT).show()
