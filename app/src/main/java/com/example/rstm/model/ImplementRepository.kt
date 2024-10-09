@@ -72,6 +72,4 @@ class ImplementRepository {
         updateUriList(initialList)  // Update LiveData with the initialized list
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
-
-
 }

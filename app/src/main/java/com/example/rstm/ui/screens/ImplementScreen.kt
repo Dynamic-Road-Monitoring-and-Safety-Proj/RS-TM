@@ -82,11 +82,12 @@ fun CameraPreviewScreenC(
     viewModel: ImplementVM,
     Modifier: Modifier
 ) {
+    val context = LocalContext.current
+    viewModel.implementRepo.initializeUriList(context)
     val uriList by viewModel.implementRepo.uriList.observeAsState(emptyList())
 
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
-    val context = LocalContext.current
 
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
     var recording by remember { mutableStateOf<PendingRecording?>(null) }
