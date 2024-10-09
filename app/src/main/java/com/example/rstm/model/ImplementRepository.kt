@@ -23,15 +23,21 @@ class ImplementRepository {
     val uriList: LiveData<List<Uri>> get() = _uriList
 
     // Helper to update _uriList safely
-    private fun updateUriList(newList: List<Uri>) {
+    fun updateUriList(newList: List<Uri>) {
         _uriList.value = newList
     }
-    private fun getUriList(): List<Uri>? {
-        return uriList.value
+    fun getUriList(): MutableList<Uri>? {
+        return _uriList.value?.toMutableList() ?: mutableListOf()
     }
-    private fun getUriSize(): Int? {
+    fun getUriSize(): Int? {
         return uriList.value?.size
     }
+    fun addUri(newUri: Uri) {
+        val currentList = _uriList.value?.toMutableList() ?: mutableListOf()  // Get current list or create a new one
+        currentList.add(newUri)  // Add the new Uri
+        updateUriList(currentList)  // Update LiveData with new list
+    }
+
 
     // Find the URI of the video file by name
     private fun findVideoUriByName(context: Context, fileName: String): Uri? {

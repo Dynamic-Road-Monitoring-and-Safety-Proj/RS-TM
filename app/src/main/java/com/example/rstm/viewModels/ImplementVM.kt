@@ -38,11 +38,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class ImplementVM(
-    sensorManager: SensorManager,
-    fusedLocationClient: FusedLocationProviderClient, // remove these two from UI
-    implementRepo : ImplementRepository
+    val sensorManager: SensorManager,
+    val fusedLocationClient: FusedLocationProviderClient, // remove these two from UI
+    val implementRepo : ImplementRepository
 ) : ViewModel() {
-
     // State management
     private val _lensFacing = MutableLiveData(CameraSelector.LENS_FACING_BACK)
     val lensFacing = _lensFacing
@@ -133,16 +132,21 @@ class ImplementVM(
         context: Context
     ): Pair<PendingRecording, androidx.core.util.Consumer<VideoRecordEvent>> {
 
-        val name: String
+        var name: String = "0.mp4"
 
-        if (uriList.size >= 6) {
-            // Circular buffer: when there are 6 videos, delete the oldest and rename the others
-            deleteOldestVideo(context, uriList)
-            renameVideos(context, uriList)  // Renames from 0.mp4 to 4.mp4
-            name = "5.mp4"  // New video will be named "5.mp4"
-        } else {
-            // If the list size is less than 6, name videos sequentially from "0.mp4" to "4.mp4"
-            name = "${uriList.size}.mp4"
+        val uriList : MutableList<Uri>? = implementRepo.getUriList()
+
+        uriList?.size?.let {
+            if (it >= 6) {
+                // Circular buffer: when there are 6 videos, delete the oldest and rename the others
+                deleteOldestVideo(context, uriList )
+                renameVideos(context, uriList)  // Renames from 0.mp4 to 4.mp4
+                implementRepo.updateUriList(uriList)
+                name = "5.mp4"  // New video will be named "5.mp4"
+            } else {
+                // If the list size is less than 6, name videos sequentially from "0.mp4" to "4.mp4"
+                name = "${uriList.size}.mp4"
+            }
         }
 
         val existingUri = findVideoUriByName(context, name)
@@ -185,7 +189,7 @@ class ImplementVM(
 
                         val videoUri = event.outputResults.outputUri
                         // Now add this new video to the list
-                        uriList.add(videoUri)
+                        implementRepo.addUri(videoUri)
                     } else {
                         Log.e("CameraScreen", "Video recording failed: ${event.cause}")
                     }
@@ -203,7 +207,14 @@ class ImplementVM(
 
         return Pair(recording, captureListener)
     }
+    fun getSensorManager() : SensorManager{
+        return sensorManager
+    }
+    fun getFusedLocation() : FusedLocationProviderClient{
+        return fusedLocationClient
+    }
 }
+
 sealed class RecordingState {
     object Stopped : RecordingState()
     data class Started(val recording: Recording?) : RecordingState()
