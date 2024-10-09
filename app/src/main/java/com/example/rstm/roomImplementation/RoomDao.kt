@@ -21,5 +21,5 @@ interface RoomDao {
     suspend fun delete(item: RoomEntity)
 
     @Query("SELECT * from uri_table WHERE id = :id")
-    fun getItem(id: Int): Flow<RoomEntity>
+    fun getTable(id: Int): Flow<RoomEntity>
 }
