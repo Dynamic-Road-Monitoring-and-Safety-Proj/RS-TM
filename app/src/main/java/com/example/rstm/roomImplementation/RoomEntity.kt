@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "uri_table")
 data class RoomEntity(
-    @PrimaryKey val id: Int,
+    @PrimaryKey(autoGenerate = true) val id: Int,
     @ColumnInfo(name = "video_uri") val videoUri: String?,
     @ColumnInfo(name = "accelerometer_uri") val accelerometerUri: String?,
     @ColumnInfo(name = "gyro_uri") val gyroUri: String?,
