@@ -3,6 +3,7 @@ package com.example.rstm
 
 import AccelerometerScreen
 import GyroscopeScreen
+import ImplementRepository
 import ImplementScreen
 import LightScreenComp
 import android.Manifest
@@ -46,7 +47,7 @@ import com.google.android.gms.location.LocationServices
 class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var sensorManager: SensorManager // Declare sensorManager
+    private lateinit var sensorManager: SensorManager
 
     // Permissions required for the app
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -119,7 +120,7 @@ class MainActivity : ComponentActivity() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
         checkPermission()
-        val implementVM = ImplementVM(sensorManager, fusedLocationClient)
+        val implementVM = ImplementVM(sensorManager, fusedLocationClient, ImplementRepository())
 
         enableEdgeToEdge()
 
@@ -156,7 +157,7 @@ class MainActivity : ComponentActivity() {
                             CameraPreviewScreen(Modifier = Modifier.padding(innerPadding), sensorManager = sensorManager, fusedLocationClient = fusedLocationClient)
                         }
                         composable("Implement Screen"){
-                            ImplementScreen(viewModel = implementVM,modifier = Modifier.padding(innerPadding))
+                            ImplementScreen(viewModel = implementVM, Modifier = Modifier.padding(innerPadding))
                         }
                     }
                 }

@@ -9,21 +9,16 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
-import androidx.camera.core.CameraProvider
 import androidx.camera.core.CameraSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.PendingRecording
-import androidx.camera.video.Quality
-import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -33,14 +28,13 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class ImplementVM(
-    val sensorManager: SensorManager,
-    val fusedLocationClient: FusedLocationProviderClient, // remove these two from UI
-    val implementRepo : ImplementRepository
+    private val sensorManager: SensorManager,
+    private val fusedLocationClient: FusedLocationProviderClient, // remove these two from UI
+    private val implementRepo : ImplementRepository
 ) : ViewModel() {
     // State management
     private val _lensFacing = MutableLiveData(CameraSelector.LENS_FACING_BACK)
@@ -171,7 +165,6 @@ class ImplementVM(
                 is VideoRecordEvent.Start -> {
                     Log.d("CameraScreen", "Recording started")
                 }
-
                 is VideoRecordEvent.Finalize -> {
                     if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                         Log.d(
@@ -212,6 +205,9 @@ class ImplementVM(
     }
     fun getFusedLocation() : FusedLocationProviderClient{
         return fusedLocationClient
+    }
+    fun getRepository() :ImplementRepository{
+        return implementRepo
     }
 }
 

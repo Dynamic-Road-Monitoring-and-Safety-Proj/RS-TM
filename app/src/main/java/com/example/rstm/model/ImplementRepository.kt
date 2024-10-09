@@ -1,21 +1,9 @@
-import android.annotation.SuppressLint
-import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import android.widget.Toast
-import androidx.camera.video.MediaStoreOutputOptions
-import androidx.camera.video.PendingRecording
-import androidx.camera.video.Recorder
-import androidx.camera.video.VideoCapture
-import androidx.camera.video.VideoRecordEvent
-import androidx.core.util.Consumer
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class ImplementRepository {
 
@@ -24,13 +12,10 @@ class ImplementRepository {
 
     // Helper to update _uriList safely
     fun updateUriList(newList: List<Uri>) {
-        _uriList.value = newList
+        _uriList.postValue(newList)  // Use postValue for background thread
     }
     fun getUriList(): MutableList<Uri>? {
         return _uriList.value?.toMutableList() ?: mutableListOf()
-    }
-    fun getUriSize(): Int? {
-        return uriList.value?.size
     }
     fun addUri(newUri: Uri) {
         val currentList = _uriList.value?.toMutableList() ?: mutableListOf()  // Get current list or create a new one

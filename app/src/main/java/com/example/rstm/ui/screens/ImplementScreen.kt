@@ -78,13 +78,13 @@ private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraPreviewScreenC(
+fun ImplementScreen(
     viewModel: ImplementVM,
     Modifier: Modifier
 ) {
     val context = LocalContext.current
-    viewModel.implementRepo.initializeUriList(context)
-    val uriList by viewModel.implementRepo.uriList.observeAsState(emptyList())
+    viewModel.getRepository().initializeUriList(context)
+    val uriList by viewModel.getRepository().uriList.observeAsState(emptyList())
 
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
