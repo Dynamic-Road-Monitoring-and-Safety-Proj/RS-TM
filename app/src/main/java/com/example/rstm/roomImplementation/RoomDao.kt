@@ -12,14 +12,14 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RoomDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(item: Item)
+    suspend fun insert(item: RoomEntity)
 
     @Update
-    suspend fun update(item: Item)
+    suspend fun update(item: RoomEntity)
 
     @Delete
-    suspend fun delete(item: Item)
+    suspend fun delete(item: RoomEntity)
 
     @Query("SELECT * from uri_table WHERE id = :id")
-    fun getItem(id: Int): Flow<Item>
+    fun getItem(id: Int): Flow<RoomEntity>
 }
