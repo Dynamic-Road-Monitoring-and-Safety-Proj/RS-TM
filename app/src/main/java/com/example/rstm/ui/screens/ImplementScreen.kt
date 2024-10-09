@@ -3,6 +3,8 @@ import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraProvider
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraSelector.LENS_FACING_BACK
 import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
@@ -51,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.util.Consumer
 import com.arthenica.mobileffmpeg.Config
 import com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL
@@ -70,21 +73,21 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.Executors
-import com.example.rstm.model.ImplementRepository
+
+private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraPreviewScreenC(
+fun ImplementScreen(
     viewModel: ImplementVM,
     Modifier: Modifier
 ) {
-    val uriList by viewModel.uriList.observeAsState(emptyList())
+    val context = LocalContext.current
+    viewModel.getRepository().initializeUriList(context)
+    val uriList by viewModel.getRepository().uriList.observeAsState(emptyList())
 
     var lensFacing = CameraSelector.LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
-    val context = LocalContext.current
-
-    repository.initializeUriList(context) // move to VM
 
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
     var recording by remember { mutableStateOf<PendingRecording?>(null) }
@@ -98,9 +101,12 @@ fun CameraPreviewScreenC(
     val videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
 
     LaunchedEffect(lensFacing) {
-        val cameraProvider = context.getCameraProvider()
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraxSelector, videoCapture)
+        viewModel.fetchCameraProvider(
+            context = context,
+            lifecycleOwner,
+            cameraxSelector,
+            videoCapture
+        )
     }
     val scope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
@@ -113,7 +119,7 @@ fun CameraPreviewScreenC(
             try {
                 while (true) {
                     async {
-                        val result = captureVideo(videoCapture, context, uriList)
+                        val result = viewModel.captureVideo(videoCapture, context)
 
                         withContext(Dispatchers.Main) {
                             Toast.makeText(context, "starting", Toast.LENGTH_SHORT).show()
@@ -152,7 +158,7 @@ fun CameraPreviewScreenC(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 0.dp,
         sheetContent = {
-            SensorSheetContent2C(sensorManager = sensorManager, fusedLocationClient = fusedLocationClient, modifier = Modifier)
+            SensorSheetContent2C(sensorManager = viewModel.getSensorManager(), fusedLocationClient = viewModel.getFusedLocation() , modifier = Modifier)
         }
     ) { padding ->
         Box(
@@ -203,20 +209,8 @@ fun CameraPreviewScreenC(
 
                             delay(1000) // Small delay to ensure stop completes
 
-                            if (uriList.size >= 6) {
-                                val uri = uriList[0]
-                                val contentResolver = context.contentResolver
-                                val deleted = contentResolver.delete(uriList[0], null, null)
-                                if (deleted > 0) {
-                                    Log.d("DeleteVideo", "Video deleted successfully: $uri")
-                                } else {
-                                    Log.e("DeleteVideo", "Failed to delete video: $uri")
-                                }
-                                uriList.removeAt(0)
-                            }
-
                             // Add the last recorded video to the list (handled in the captureListener already)
-                            val result = captureVideo(videoCapture, context, uriList)
+                            val result = viewModel.captureVideo(videoCapture, context)
                             captureListener = result.second
                             recording = result.first
 
