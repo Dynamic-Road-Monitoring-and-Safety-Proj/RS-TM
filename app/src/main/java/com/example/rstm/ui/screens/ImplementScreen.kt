@@ -234,38 +234,9 @@ fun ImplementScreen(
 
                         val inputs = uriList.joinToString("|") { "-i $it" }
                         val filter = uriList.indices.joinToString(";") { "[${it}:v:0]" } + "concat=n=${uriList.size}:v=1:a=0[outv]"
-                        val command = "$inputs -filter_complex \"$filter\" -map \"[outv]\" $outputPath"
 
                         Log.e("sdaf", "_____________________________${uriList.size}    : $uriList")
 
-                        val executionId = FFmpeg.executeAsync(
-                            command
-                        )
-                        { _, returnCode ->
-                            when (returnCode) {
-                                RETURN_CODE_SUCCESS -> {
-                                    Log.i(
-                                        Config.TAG,
-                                        "Async command execution completed successfully."
-                                    )
-                                }
-                                RETURN_CODE_CANCEL -> {
-                                    Log.i(
-                                        Config.TAG,
-                                        "Async command execution cancelled by user."
-                                    )
-                                }
-                                else -> {
-                                    Log.i(
-                                        Config.TAG,
-                                        String.format(
-                                            "Async command execution failed with returnCode=%d.",
-                                            returnCode
-                                        )
-                                    )
-                                }
-                            }
-                        }
                     }
                 ) {
                     Icon(
