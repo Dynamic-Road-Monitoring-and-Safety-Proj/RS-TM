@@ -13,6 +13,4 @@ data class RoomEntity(
     @ColumnInfo(name = "location_uri") val locationUri: String?,
     @ColumnInfo(name = "light_uri") val light_Uri: String?,
     @ColumnInfo(name = "time_uri") val time_Uri: String?,
-){
-
-}
+)

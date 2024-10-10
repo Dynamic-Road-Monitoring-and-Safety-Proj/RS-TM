@@ -19,7 +19,7 @@ class RoomRepository(private val roomDao: RoomDao) {
 
         // Get the entity from the database
         roomDao.getTable(1).collect { roomEntity ->
-            roomEntity?.let {
+            roomEntity.let {
                 val uriList = it.videoUriList?.map { uriString -> Uri.parse(uriString) } ?: emptyList()
                 liveData.postValue(uriList)
             }
