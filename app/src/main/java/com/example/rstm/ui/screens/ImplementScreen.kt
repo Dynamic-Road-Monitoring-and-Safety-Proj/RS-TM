@@ -220,7 +220,6 @@ fun ImplementScreen(
                                 captureListener
                             )
                         }
-
                         Log.e("sdaf", "_____________________________${uriList.size}    : $uriList")
                     }
                 ) {

@@ -11,11 +11,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class ImplementRepository {
+class ImplementRepository(context: Context) {
 
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
     val uriList: LiveData<List<Uri>> get() = _uriList
 
+    private val dao: RoomDao = AppDatabase.getDatabase(context).roomDao()
     // Helper to update _uriList safely
     fun updateUriList(newList: List<Uri>) {
         _uriList.postValue(newList)  // Use postValue for background thread

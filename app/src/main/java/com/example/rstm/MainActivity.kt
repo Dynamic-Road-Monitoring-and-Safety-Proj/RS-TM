@@ -33,6 +33,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.ui.screens.Activated
 import com.example.rstm.ui.screens.CameraPreviewScreen
 import com.example.rstm.ui.screens.CameraScreen
@@ -120,7 +121,7 @@ class MainActivity : ComponentActivity() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
         checkPermission()
-        val implementVM = ImplementVM(sensorManager, fusedLocationClient, ImplementRepository())
+        val implementVM = ImplementVM(sensorManager, fusedLocationClient, ImplementRepository(this@MainActivity))
 
         enableEdgeToEdge()
 
