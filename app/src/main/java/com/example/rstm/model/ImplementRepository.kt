@@ -4,6 +4,12 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.room.RoomDatabase
+import com.example.rstm.roomImplementation.RoomDao
+import com.example.rstm.roomImplementation.RoomEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class ImplementRepository {
 
@@ -57,4 +63,31 @@ class ImplementRepository {
         updateUriList(initialList)  // Update LiveData with the initialized list
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
+    fun saveToDatabase(context: Context) {
+        // Get the current list of URIs (convert them to Strings)
+        val currentUriList = getUriList()?.map { it.toString() } ?: emptyList()
+
+        // Create a RoomEntity object
+        val roomEntity = RoomEntity(
+            id = 0,  // Set to 0 for auto-generation
+            videoUriList = currentUriList,  // Store the URI list
+            accelerometerUri = null,  // Placeholder for sensor data
+            gyroUri = null,
+            locationUri = null,
+            light_Uri = null,
+            time_Uri = null
+        )
+
+        // Use coroutine scope to save to the database asynchronously
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // Insert the RoomEntity into the database
+                dao.insert(roomEntity)
+                Log.d("SaveToDatabase", "Data saved to the database.")
+            } catch (e: Exception) {
+                Log.e("SaveToDatabase", "Error saving data: ${e.message}")
+            }
+        }
+    }
+
 }
