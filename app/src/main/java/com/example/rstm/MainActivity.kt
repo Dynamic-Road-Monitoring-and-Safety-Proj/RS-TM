@@ -121,7 +121,7 @@ class MainActivity : ComponentActivity() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
         checkPermission()
-        val implementVM = ImplementVM(sensorManager, fusedLocationClient, ImplementRepository(this@MainActivity))
+        val implementVM = ImplementVM(sensorManager, fusedLocationClient, ImplementRepository(applicationContext))
 
         enableEdgeToEdge()
 

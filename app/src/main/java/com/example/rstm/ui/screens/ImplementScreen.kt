@@ -86,7 +86,7 @@ fun ImplementScreen(
     viewModel.getRepository().initializeUriList(context)
     val uriList by viewModel.getRepository().uriList.observeAsState(emptyList())
 
-    var lensFacing = CameraSelector.LENS_FACING_BACK
+    var lensFacing = LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()

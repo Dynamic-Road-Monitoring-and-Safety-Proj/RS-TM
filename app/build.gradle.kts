@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.google.devtools.ksp")
+
 }
 android {
     namespace = "com.example.rstm"
@@ -85,4 +86,6 @@ dependencies {
 
     // To use Kotlin Symbol Processing (KSP)
     ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
+
 }

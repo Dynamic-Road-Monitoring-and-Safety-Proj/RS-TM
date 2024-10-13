@@ -4,7 +4,6 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.room.RoomDatabase
 import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.roomImplementation.RoomEntity
 import kotlinx.coroutines.CoroutineScope
@@ -16,7 +15,9 @@ class ImplementRepository(context: Context) {
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
     val uriList: LiveData<List<Uri>> get() = _uriList
 
-    private val dao: RoomDao = AppDatabase.getDatabase(context).roomDao()
+    private val dao: RoomDao by lazy {
+        AppDatabase.getDatabase(context).roomDao()
+    }
     // Helper to update _uriList safely
     fun updateUriList(newList: List<Uri>) {
         _uriList.postValue(newList)  // Use postValue for background thread
@@ -65,28 +66,23 @@ class ImplementRepository(context: Context) {
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
     fun saveToDatabase(context: Context) {
-        // Get the current list of URIs (convert them to Strings)
-        val currentUriList = getUriList()?.map { it.toString() } ?: emptyList()
-
-        // Create a RoomEntity object
         val roomEntity = RoomEntity(
-            id = 0,  // Set to 0 for auto-generation
-            videoUriList = currentUriList,  // Store the URI list
-            accelerometerUri = null,  // Placeholder for sensor data
+            id = 0,
+            videoUriList = uriList.value.toString(),
+            accelerometerUri = null,
             gyroUri = null,
             locationUri = null,
-            light_Uri = null,
-            time_Uri = null
+            lightUri = null,
+            timeUri = null
         )
 
-        // Use coroutine scope to save to the database asynchronously
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Insert the RoomEntity into the database
+                Log.d("SaveToDatabase", "Inserting: $roomEntity")
                 dao.insert(roomEntity)
-                Log.d("SaveToDatabase", "Data saved to the database.")
+                Log.d("SaveToDatabase", "Data saved successfully")
             } catch (e: Exception) {
-                Log.e("SaveToDatabase", "Error saving data: ${e.message}")
+                Log.e("SaveToDatabase", "Error saving data: ${e.message}", e)
             }
         }
     }

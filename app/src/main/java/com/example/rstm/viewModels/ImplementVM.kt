@@ -87,17 +87,23 @@ class ImplementVM(
     }
 
     // support functions for capture video function
-    private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>) {
+    private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>) : Int {
+        val isDeleted = 0
         if (uriList.isNotEmpty()) {
             val oldestUri = uriList[0]
             val deleted = context.contentResolver.delete(oldestUri, null, null)
+
             if (deleted > 0) {
                 Log.d("DeleteVideo", "Deleted oldest video: $oldestUri")
                 uriList.removeAt(0)
+                return 1
             } else {
                 Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
+                return 0
             }
+
         }
+        return isDeleted
     }
     private fun renameVideos(context: Context, uriList: MutableList<Uri>) {
         for (i in uriList.indices) {
@@ -133,9 +139,11 @@ class ImplementVM(
         uriList?.size?.let {
             if (it >= 6) {
                 // Circular buffer: when there are 6 videos, delete the oldest and rename the others
-                deleteOldestVideo(context, uriList )
-                renameVideos(context, uriList)  // Renames from 0.mp4 to 4.mp4
-                implementRepo.updateUriList(uriList)
+                val isDeleted = deleteOldestVideo(context, uriList )
+                if(isDeleted == 1){
+                    renameVideos(context, uriList)  // Renames from 0.mp4 to 4.mp4
+                    implementRepo.updateUriList(uriList)
+                }
                 name = "5.mp4"  // New video will be named "5.mp4"
             } else {
                 // If the list size is less than 6, name videos sequentially from "0.mp4" to "4.mp4"
@@ -197,7 +205,6 @@ class ImplementVM(
         val recording = videoCapture.output
             .prepareRecording(context, mediaStoreOutput)
             .withAudioEnabled()
-
         return Pair(recording, captureListener)
     }
     fun getSensorManager() : SensorManager{
