@@ -86,7 +86,7 @@ fun ImplementScreen(
     viewModel.getRepository().initializeUriList(context)
     val uriList by viewModel.getRepository().uriList.observeAsState(emptyList())
 
-    var lensFacing = CameraSelector.LENS_FACING_BACK
+    var lensFacing = LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
@@ -213,30 +213,14 @@ fun ImplementScreen(
                             val result = viewModel.captureVideo(videoCapture, context)
                             captureListener = result.second
                             recording = result.first
-
-                            // Start a new recording
+                            viewModel.getRepository().saveToDatabase(context)
+                            // Start a new buffered recording
                             onRecording = recording?.start(
                                 executor,
                                 captureListener
                             )
                         }
-
-                        val currentTime = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(Date())
-                        val dcimDirectory = Environment.getExternalStoragePublicDirectory(
-                            Environment.DIRECTORY_DCIM)
-                        val subfolder = File(dcimDirectory, "RS-TM")
-                        // Ensure the directory exists
-                        if (!subfolder.exists()) {
-                            subfolder.mkdirs()
-                        }
-
-                        val outputPath = File(subfolder, "Video_$currentTime.mp4").absolutePath
-
-                        val inputs = uriList.joinToString("|") { "-i $it" }
-                        val filter = uriList.indices.joinToString(";") { "[${it}:v:0]" } + "concat=n=${uriList.size}:v=1:a=0[outv]"
-
                         Log.e("sdaf", "_____________________________${uriList.size}    : $uriList")
-
                     }
                 ) {
                     Icon(

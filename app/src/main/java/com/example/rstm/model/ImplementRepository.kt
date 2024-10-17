@@ -4,12 +4,18 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.example.rstm.MainActivity
+import com.example.rstm.roomImplementation.RoomDao
+import com.example.rstm.roomImplementation.RoomEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-class ImplementRepository {
+class ImplementRepository(context: Context) {
 
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
     val uriList: LiveData<List<Uri>> get() = _uriList
-
+    val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
     fun updateUriList(newList: List<Uri>) {
         _uriList.postValue(newList)  // Use postValue for background thread
@@ -57,4 +63,26 @@ class ImplementRepository {
         updateUriList(initialList)  // Update LiveData with the initialized list
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
+    fun saveToDatabase(context: Context) {
+        val roomEntity = RoomEntity(
+            id = 0,
+            videoUriList = uriList.value.toString(),
+            accelerometerUri = null,
+            gyroUri = null,
+            locationUri = null,
+            lightUri = null,
+            timeUri = null
+        )
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                Log.d("SaveToDatabase", "Inserting: $roomEntity")
+                dao.insert(roomEntity)
+                Log.d("SaveToDatabase", "Data saved successfully")
+            } catch (e: Exception) {
+                Log.e("SaveToDatabase", "Error saving data: ${e.message}", e)
+            }
+        }
+    }
+
 }
