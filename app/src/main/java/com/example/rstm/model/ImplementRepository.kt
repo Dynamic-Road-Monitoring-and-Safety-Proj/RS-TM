@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.rstm.MainActivity
+import com.example.rstm.model.State
 import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.roomImplementation.RoomEntity
 import kotlinx.coroutines.CoroutineScope
@@ -13,7 +14,10 @@ import kotlinx.coroutines.launch
 
 class ImplementRepository(context: Context) {
 
+    private val state = State()
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
+
+
     val uriList: LiveData<List<Uri>> get() = _uriList
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
