@@ -24,12 +24,12 @@ class ImplementRepository(context: Context) {
     fun getUriList(): MutableList<Uri>? {
         return _uriList.value?.toMutableList() ?: mutableListOf()
     }
+
     fun addUri(newUri: Uri) {
         val currentList = _uriList.value?.toMutableList() ?: mutableListOf()  // Get current list or create a new one
         currentList.add(newUri)  // Add the new Uri
         updateUriList(currentList)  // Update LiveData with new list
     }
-
 
     // Find the URI of the video file by name
     private fun findVideoUriByName(context: Context, fileName: String): Uri? {
@@ -60,7 +60,6 @@ class ImplementRepository(context: Context) {
                 Log.d("InitializeUriList", "Added existing video: $fileName")
             }
         }
-
         updateUriList(initialList)  // Update LiveData with the initialized list
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
