@@ -2,11 +2,9 @@ import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.rstm.MainActivity
 import com.example.rstm.model.State
-import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.roomImplementation.RoomEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,11 +12,10 @@ import kotlinx.coroutines.launch
 
 class ImplementRepository(context: Context) {
 
-    private val state = State()
+    private val state = MutableLiveData(State())
+
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
 
-
-    val uriList: LiveData<List<Uri>> get() = _uriList
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
     fun updateUriList(newList: List<Uri>) {
@@ -70,12 +67,12 @@ class ImplementRepository(context: Context) {
     fun saveToDatabase(context: Context) {
         val roomEntity = RoomEntity(
             id = 0,
-            videoUriList = uriList.value.toString(),
-            accelerometerUri = null,
-            gyroUri = null,
-            locationUri = null,
-            lightUri = null,
-            timeUri = null
+            videoUriList = state.value?.videoUriList,
+            accelerometerUri = state.value?.accelerometerUri,
+            gyroUri = state.value?.gyroUri,
+            locationUri = state.value?.locationUri,
+            lightUri = state.value?.lightUri,
+            timeUri = state.value?.timeUri
         )
 
         CoroutineScope(Dispatchers.IO).launch {
