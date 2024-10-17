@@ -66,7 +66,6 @@ class ImplementVM(
             val cameraProvider = context.getCameraProvider()
             cameraProvider.unbindAll()
             cameraProvider.bindToLifecycle(lifecycleOwner, cameraxSelector, videoCapture)
-
         }
     }
 
@@ -101,7 +100,6 @@ class ImplementVM(
                 Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
                 return 0
             }
-
         }
         return isDeleted
     }

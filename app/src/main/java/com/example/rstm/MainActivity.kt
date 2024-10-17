@@ -33,6 +33,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
 import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.ui.screens.Activated
 import com.example.rstm.ui.screens.CameraPreviewScreen
@@ -44,11 +45,18 @@ import com.example.rstm.ui.theme.RSTMTheme
 import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.example.rstm.roomImplementation.AppDatabase
+
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var sensorManager: SensorManager
+
+    companion object{
+        lateinit var appDatabase: AppDatabase
+        const val REQUEST_CODE_STORAGE_PERMISSION = 101
+    }
 
     // Permissions required for the app
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -115,12 +123,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        appDatabase = Room.databaseBuilder(applicationContext, AppDatabase::class.java, AppDatabase.NAME).build()
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         // Initialize sensorManager
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
         checkPermission()
+
         val implementVM = ImplementVM(sensorManager, fusedLocationClient, ImplementRepository(applicationContext))
 
         enableEdgeToEdge()
@@ -166,9 +177,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    companion object {
-        const val REQUEST_CODE_STORAGE_PERMISSION = 101
-    }
 }
 
 @Preview

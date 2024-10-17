@@ -4,6 +4,7 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.example.rstm.MainActivity
 import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.roomImplementation.RoomEntity
 import kotlinx.coroutines.CoroutineScope
@@ -14,10 +15,7 @@ class ImplementRepository(context: Context) {
 
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
     val uriList: LiveData<List<Uri>> get() = _uriList
-
-    private val dao: RoomDao by lazy {
-        AppDatabase.getDatabase(context).roomDao()
-    }
+    val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
     fun updateUriList(newList: List<Uri>) {
         _uriList.postValue(newList)  // Use postValue for background thread
