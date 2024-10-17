@@ -84,7 +84,6 @@ fun ImplementScreen(
 ) {
     val context = LocalContext.current
     viewModel.getRepository().initializeUriList(context)
-    val uriList by viewModel.getRepository().uriList.observeAsState(emptyList())
 
     var lensFacing = LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -220,7 +219,6 @@ fun ImplementScreen(
                                 captureListener
                             )
                         }
-                        Log.e("sdaf", "_____________________________${uriList.size}    : $uriList")
                     }
                 ) {
                     Icon(

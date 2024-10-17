@@ -4,6 +4,7 @@ import ImplementRepository
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
+import android.hardware.SensorManager
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
@@ -31,6 +32,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class ImplementVM(
+    private val sensorManager: SensorManager,
     private val fusedLocationClient: FusedLocationProviderClient, // remove these two from UI
     private val implementRepo : ImplementRepository
 ) : ViewModel() {
@@ -202,6 +204,9 @@ class ImplementVM(
             .prepareRecording(context, mediaStoreOutput)
             .withAudioEnabled()
         return Pair(recording, captureListener)
+    }
+    fun getSensorManager() : SensorManager{
+        return sensorManager
     }
     fun getFusedLocation() : FusedLocationProviderClient{
         return fusedLocationClient
