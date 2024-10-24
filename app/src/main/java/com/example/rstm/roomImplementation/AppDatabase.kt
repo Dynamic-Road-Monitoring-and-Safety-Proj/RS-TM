@@ -9,6 +9,7 @@ import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.roomImplementation.RoomEntity
 
 @Database(entities = [RoomEntity::class], version = 1)
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     companion object {

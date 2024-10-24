@@ -36,10 +36,12 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.rstm.model.SensorData
 import com.example.rstm.viewModels.CameraScreenVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.sql.Timestamp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -123,8 +125,28 @@ fun Activated(
 
 @Composable
 fun SensorSheetContent(sensorManager: SensorManager, fusedLocationClient :FusedLocationProviderClient,modifier: Modifier) {
+    // Initialize sensor Data class
+    val sensorData = SensorData()
+
+    fun changeGyroData(x: Float, y: Float, z: Float) { //also time
+        sensorData.gyroscopeData = Triple(x, y, z)
+        sensorData.timestamp = Timestamp(System.currentTimeMillis())
+    }
+    fun changeAccData(x: Float, y: Float, z: Float) {
+        sensorData.accelerometerData = Triple(x, y, z)
+    }
+    fun changeMagData(x: Float, y: Float, z: Float) {
+        sensorData.magneticData = Triple(x, y, z)
+    }
+    fun changeLightData(light: Float) {
+        sensorData.lightData = light
+    }
+    fun changeLocationData(location: android.location.Location) {
+        sensorData.locationData = location
+    }
+
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager, function = ::changeGyroData)
-    AccelerometerScreen(modifier = modifier, sensorManager, changeAccData)
+    AccelerometerScreen(modifier = modifier, sensorManager, ::changeAccData)
     LightScreenComp(
         modifier = modifier,
         sensorManager = sensorManager,
@@ -134,7 +156,7 @@ fun SensorSheetContent(sensorManager: SensorManager, fusedLocationClient :FusedL
     MagFieldScreen(
         modifier = modifier,
         sensorManager = sensorManager,
-        function = :: changeLightData
+        function = :: changeMagData
     )
 }
 
