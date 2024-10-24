@@ -4,6 +4,7 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.example.rstm.MainActivity
+import com.example.rstm.model.SensorData
 import com.example.rstm.model.State
 import com.example.rstm.roomImplementation.RoomEntity
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +16,10 @@ class ImplementRepository(context: Context) {
     private val state = MutableLiveData(State())
 
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
+
+    val sensorDataList : MutableList<SensorData> = mutableListOf()
+
+    
 
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
