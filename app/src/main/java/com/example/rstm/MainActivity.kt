@@ -34,7 +34,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
-import com.example.rstm.roomImplementation.RoomDao
+import com.example.rstm.model.SensorData
 import com.example.rstm.ui.screens.Activated
 import com.example.rstm.ui.screens.CameraPreviewScreen
 import com.example.rstm.ui.screens.CameraScreen
@@ -119,6 +119,26 @@ class MainActivity : ComponentActivity() {
         startActivity(intent)
     }
 
+    // Initialize sensor Data class
+    val sensorData = SensorData()
+
+    fun changeGyroData(x: Float, y: Float, z: Float) {
+        sensorData.gyroscopeData = Triple(x, y, z)
+    }
+    fun changeAccData(x: Float, y: Float, z: Float) {
+        sensorData.accelerometerData = Triple(x, y, z)
+    }
+    fun changeMagData(x: Float, y: Float, z: Float) {
+        sensorData.magneticData = Triple(x, y, z)
+    }
+    fun changeLightData(light: Float) {
+        sensorData.lightData = light
+    }
+    fun changeLocationData(location: android.location.Location) {
+        sensorData.locationData = location
+    }
+
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -145,19 +165,19 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(Modifier.padding(innerPadding), navController)
                         }
                         composable("accelerometer") {
-                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager)
+                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager, ::changeAccData)
                         }
                         composable("gyro") {
-                            GyroscopeScreen(modifier = Modifier.padding(innerPadding), sensorManager)
+                            GyroscopeScreen(modifier = Modifier.padding(innerPadding), sensorManager, ::changeGyroData)
                         }
                         composable("magField") {
-                            MagFieldScreen(modifier = Modifier.padding(innerPadding), sensorManager)
+                            MagFieldScreen(modifier = Modifier.padding(innerPadding), sensorManager, ::changeMagData)
                         }
                         composable("lightScreen") {
-                            LightScreenComp(modifier = Modifier.padding(innerPadding), sensorManager)
+                            LightScreenComp(modifier = Modifier.padding(innerPadding), sensorManager, :: changeLightData)
                         }
                         composable("locationScreen") {
-                            LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
+                            LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient, ::changeLocationData)
                         }
                         composable("cameraScreen") {
                             CameraScreen(Modifier, this@MainActivity, applicationContext)

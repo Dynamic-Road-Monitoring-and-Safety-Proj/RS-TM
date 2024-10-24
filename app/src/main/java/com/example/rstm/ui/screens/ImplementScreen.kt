@@ -1,10 +1,6 @@
 import android.hardware.SensorManager
-import android.net.Uri
-import android.os.Environment
 import android.util.Log
 import android.widget.Toast
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraProvider
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraSelector.LENS_FACING_BACK
 import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
@@ -25,11 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Refresh
@@ -37,13 +29,10 @@ import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,25 +42,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.util.Consumer
-import com.arthenica.mobileffmpeg.Config
-import com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL
-import com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS
-import com.arthenica.mobileffmpeg.FFmpeg
+import com.example.rstm.model.SensorData
 import com.example.rstm.ui.screens.LocationScreen
 import com.example.rstm.viewModels.ImplementVM
-import com.example.rstm.viewModels.RecordingState
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.concurrent.Executors
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
@@ -84,7 +64,6 @@ fun ImplementScreen(
 ) {
     val context = LocalContext.current
     viewModel.getRepository().initializeUriList(context)
-    val uriList by viewModel.getRepository().uriList.observeAsState(emptyList())
 
     var lensFacing = LENS_FACING_BACK
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -220,7 +199,6 @@ fun ImplementScreen(
                                 captureListener
                             )
                         }
-                        Log.e("sdaf", "_____________________________${uriList.size}    : $uriList")
                     }
                 ) {
                     Icon(
@@ -235,8 +213,33 @@ fun ImplementScreen(
 
 @Composable
 fun SensorSheetContent2C(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
-    GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
-    AccelerometerScreen(modifier = modifier, sensorManager)
-    LightScreenComp(modifier = modifier, sensorManager = sensorManager )
-    LocationScreen(fusedLocationClient = fusedLocationClient)
+    val sensorDataIMP = SensorData()
+
+    fun changeGyroData(x: Float, y: Float, z: Float) {
+        sensorDataIMP.gyroscopeData = Triple(x, y, z)
+    }
+    fun changeAccData(x: Float, y: Float, z: Float) {
+        sensorDataIMP.accelerometerData = Triple(x, y, z)
+    }
+
+    fun changeMagData(x: Float, y: Float, z: Float) {
+        sensorDataIMP.magneticData = Triple(x, y, z)
+    }
+
+    fun changeLightData(light: Float) {
+        sensorDataIMP.lightData = light
+    }
+    fun changeLocationData(location: android.location.Location) {
+        sensorDataIMP.locationData = location
+    }
+
+
+    GyroscopeScreen(modifier = modifier, sensorManager = sensorManager, function = ::changeGyroData)
+    AccelerometerScreen(modifier = modifier, sensorManager, ::changeAccData)
+    LightScreenComp(
+        modifier = modifier,
+        sensorManager = sensorManager,
+        function = :: changeLightData
+    )
+    LocationScreen(fusedLocationClient = fusedLocationClient, function = ::changeLocationData)
 }

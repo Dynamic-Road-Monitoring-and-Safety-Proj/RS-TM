@@ -2,11 +2,9 @@ import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.rstm.MainActivity
 import com.example.rstm.model.State
-import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.roomImplementation.RoomEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,11 +12,10 @@ import kotlinx.coroutines.launch
 
 class ImplementRepository(context: Context) {
 
-    private val state = State()
+    private val state = MutableLiveData(State())
+
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
 
-
-    val uriList: LiveData<List<Uri>> get() = _uriList
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
     fun updateUriList(newList: List<Uri>) {
@@ -27,12 +24,12 @@ class ImplementRepository(context: Context) {
     fun getUriList(): MutableList<Uri>? {
         return _uriList.value?.toMutableList() ?: mutableListOf()
     }
+
     fun addUri(newUri: Uri) {
         val currentList = _uriList.value?.toMutableList() ?: mutableListOf()  // Get current list or create a new one
         currentList.add(newUri)  // Add the new Uri
         updateUriList(currentList)  // Update LiveData with new list
     }
-
 
     // Find the URI of the video file by name
     private fun findVideoUriByName(context: Context, fileName: String): Uri? {
@@ -63,19 +60,18 @@ class ImplementRepository(context: Context) {
                 Log.d("InitializeUriList", "Added existing video: $fileName")
             }
         }
-
         updateUriList(initialList)  // Update LiveData with the initialized list
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
     fun saveToDatabase(context: Context) {
         val roomEntity = RoomEntity(
             id = 0,
-            videoUriList = uriList.value.toString(),
-            accelerometerUri = null,
-            gyroUri = null,
-            locationUri = null,
-            lightUri = null,
-            timeUri = null
+            videoUriList = state.value?.videoUriList,
+            accelerometerUri = state.value?.accelerometerUri,
+            gyroUri = state.value?.gyroUri,
+            locationUri = state.value?.locationUri,
+            lightUri = state.value?.lightUri,
+            timeUri = state.value?.timeUri
         )
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -88,5 +84,4 @@ class ImplementRepository(context: Context) {
             }
         }
     }
-
 }

@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.CameraScreenVM
-import com.example.rstm.viewModels.MagneticFieldScreenVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -124,11 +123,19 @@ fun Activated(
 
 @Composable
 fun SensorSheetContent(sensorManager: SensorManager, fusedLocationClient :FusedLocationProviderClient,modifier: Modifier) {
-    GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
-    AccelerometerScreen(modifier = modifier, sensorManager)
-    LightScreenComp(modifier = modifier, sensorManager = sensorManager )
-    LocationScreen(fusedLocationClient = fusedLocationClient)
-    MagFieldScreen(modifier = modifier, sensorManager = sensorManager)
+    GyroscopeScreen(modifier = modifier, sensorManager = sensorManager, function = ::changeGyroData)
+    AccelerometerScreen(modifier = modifier, sensorManager, changeAccData)
+    LightScreenComp(
+        modifier = modifier,
+        sensorManager = sensorManager,
+        function = :: changeLightData
+    )
+    LocationScreen(fusedLocationClient = fusedLocationClient, function = ::changeLocationData)
+    MagFieldScreen(
+        modifier = modifier,
+        sensorManager = sensorManager,
+        function = :: changeLightData
+    )
 }
 
 @Composable

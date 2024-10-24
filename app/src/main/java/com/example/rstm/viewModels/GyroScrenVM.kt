@@ -15,6 +15,7 @@ class GyroViewModel : ViewModel() {
     var y1 = mutableFloatStateOf(0f)
     var z1 = mutableFloatStateOf(0f)
 
+
     private val gyroEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             event?.let {
@@ -22,6 +23,7 @@ class GyroViewModel : ViewModel() {
                     x1.floatValue = event.values[0]
                     y1.floatValue = event.values[1]
                     z1.floatValue = event.values[2]
+
 //                    values[0]: Angular speed around the x-axis
 //                    values[1]: Angular speed around the y-axis
 //                    values[2]: Angular speed around the z-axis
