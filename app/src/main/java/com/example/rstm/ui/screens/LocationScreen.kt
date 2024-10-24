@@ -1,13 +1,8 @@
 package com.example.rstm.ui.screens
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
 import android.location.Location
 import android.util.Log
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
@@ -15,14 +10,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.core.content.ContextCompat
 import com.google.android.gms.location.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 
 @Composable
-fun LocationScreen(modifier: Modifier = Modifier, fusedLocationClient: FusedLocationProviderClient) {
+fun LocationScreen(
+    modifier: Modifier = Modifier,
+    fusedLocationClient: FusedLocationProviderClient,
+    function: (Location) -> Unit
+) {
     val context = LocalContext.current
     var currentLocation by remember { mutableStateOf<Location?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }

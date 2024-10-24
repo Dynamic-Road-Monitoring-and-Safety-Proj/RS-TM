@@ -15,7 +15,7 @@ import kotlinx.coroutines.delay
 fun AccelerometerScreen(
     modifier: Modifier,
     sensorManager: SensorManager,
-    changeAccData: Unit
+    changeAccData: (Float, Float, Float) -> Unit
 ) {
     val accelerometerVM: AccelerometerScreenVM = viewModel()
     val accelerometer: Sensor? = accelerometerVM.accelerometer

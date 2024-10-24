@@ -1,23 +1,21 @@
 package com.example.rstm.ui.screens
 
 
-import android.hardware.Sensor
 import android.hardware.SensorManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.MagneticFieldScreenVM
 
 @Composable
 fun MagFieldScreen(
     modifier: Modifier,
-    sensorManager : SensorManager
+    sensorManager: SensorManager,
+    function: (Float, Float, Float) -> Unit
 ) {
     val magVM : MagneticFieldScreenVM = viewModel()
     DisposableEffect(sensorManager) {

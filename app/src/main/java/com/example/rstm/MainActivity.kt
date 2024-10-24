@@ -128,6 +128,11 @@ class MainActivity : ComponentActivity() {
     fun changeAccData(x: Float, y: Float, z: Float) {
         sensorData.accelerometerData = Triple(x, y, z)
     }
+
+    fun changeMagData(x: Float, y: Float, z: Float) {
+        sensorData.magneticData = Triple(x, y, z)
+    }
+
     fun changeLightData(light: Float) {
         sensorData.lightData = light
     }
@@ -162,19 +167,19 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(Modifier.padding(innerPadding), navController)
                         }
                         composable("accelerometer") {
-                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager, changeAccData)
+                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager, ::changeAccData)
                         }
                         composable("gyro") {
-                            GyroscopeScreen(modifier = Modifier.padding(innerPadding), sensorManager)
+                            GyroscopeScreen(modifier = Modifier.padding(innerPadding), sensorManager, ::changeGyroData)
                         }
                         composable("magField") {
-                            MagFieldScreen(modifier = Modifier.padding(innerPadding), sensorManager)
+                            MagFieldScreen(modifier = Modifier.padding(innerPadding), sensorManager, ::changeMagData)
                         }
                         composable("lightScreen") {
-                            LightScreenComp(modifier = Modifier.padding(innerPadding), sensorManager)
+                            LightScreenComp(modifier = Modifier.padding(innerPadding), sensorManager, :: changeLightData)
                         }
                         composable("locationScreen") {
-                            LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient)
+                            LocationScreen(modifier = Modifier.padding(innerPadding), fusedLocationClient, ::changeLocationData)
                         }
                         composable("cameraScreen") {
                             CameraScreen(Modifier, this@MainActivity, applicationContext)

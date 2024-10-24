@@ -6,6 +6,7 @@ import android.location.Location
 
 data class SensorData(
     var accelerometerData: Triple<Float, Float, Float> = Triple(0f, 0f, 0f),
+    var magneticData : Triple<Float, Float, Float> = Triple(0f, 0f, 0f),
     var gyroscopeData: Triple<Float, Float, Float> = Triple(0f, 0f, 0f),
     var lightData:  Float = 0f,
     var locationData: Location = Location("")

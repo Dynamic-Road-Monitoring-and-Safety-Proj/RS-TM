@@ -5,14 +5,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.LightViewModel
-import kotlinx.coroutines.delay
 
 @Composable
-fun LightScreenComp(modifier: Modifier, sensorManager:SensorManager) {
+fun LightScreenComp(modifier: Modifier, sensorManager: SensorManager, function: (Float) -> Unit) {
     val viewModel: LightViewModel = viewModel()
     val lightValue = viewModel.lightValue
 
