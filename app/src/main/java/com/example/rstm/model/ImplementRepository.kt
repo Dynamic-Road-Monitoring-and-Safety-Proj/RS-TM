@@ -17,9 +17,14 @@ class ImplementRepository(context: Context) {
 
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
 
+    private val scope = CoroutineScope(Dispatchers.IO)
     val sensorDataList : MutableList<SensorData> = mutableListOf()
 
-    
+    fun listMaker(sensorData: SensorData){
+        scope.launch(Dispatchers.IO) {
+            sensorDataList.add(sensorData)
+        }
+    }
 
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
@@ -68,6 +73,7 @@ class ImplementRepository(context: Context) {
         updateUriList(initialList)  // Update LiveData with the initialized list
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
+
     fun saveToDatabase(context: Context) {
         val roomEntity = RoomEntity(
             id = 0,
