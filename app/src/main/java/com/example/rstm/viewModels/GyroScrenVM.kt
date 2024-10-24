@@ -15,6 +15,7 @@ class GyroViewModel : ViewModel() {
     var y1 = mutableFloatStateOf(0f)
     var z1 = mutableFloatStateOf(0f)
 
+
     private val gyroEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             event?.let {

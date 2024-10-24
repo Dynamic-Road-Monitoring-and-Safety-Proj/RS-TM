@@ -34,6 +34,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
+import com.example.rstm.model.SensorData
 import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.ui.screens.Activated
 import com.example.rstm.ui.screens.CameraPreviewScreen
@@ -118,6 +119,23 @@ class MainActivity : ComponentActivity() {
         intent.data = Uri.parse("package:$packageName")
         startActivity(intent)
     }
+
+    // Initialize sensor Data class
+    val sensorData = SensorData()
+
+    fun changeGyroData(x: Float, y: Float, z: Float) {
+        sensorData.gyroscopeData = Triple(x, y, z)
+    }
+    fun changeAccData(x: Float, y: Float, z: Float) {
+        sensorData.accelerometerData = Triple(x, y, z)
+    }
+    fun changeLightData(light: Float) {
+        sensorData.lightData = light
+    }
+    fun changeLocationData(location: android.location.Location) {
+        sensorData.locationData = location
+    }
+
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
