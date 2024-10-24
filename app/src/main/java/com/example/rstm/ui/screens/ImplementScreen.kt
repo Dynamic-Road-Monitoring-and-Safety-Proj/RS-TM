@@ -213,7 +213,7 @@ fun ImplementScreen(
 @Composable
 fun SensorSheetContent2C(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
-    AccelerometerScreen(modifier = modifier, sensorManager)
+    AccelerometerScreen(modifier = modifier, sensorManager, changeAccData)
     LightScreenComp(modifier = modifier, sensorManager = sensorManager )
     LocationScreen(fusedLocationClient = fusedLocationClient)
 }

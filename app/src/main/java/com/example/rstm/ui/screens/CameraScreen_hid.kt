@@ -6,7 +6,6 @@ import LightScreenComp
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
-import android.database.ContentObserver
 import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Environment
@@ -313,7 +312,7 @@ fun CameraPreviewScreen(
 @Composable
 fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager)
-    AccelerometerScreen(modifier = modifier, sensorManager)
+    AccelerometerScreen(modifier = modifier, sensorManager, changeAccData)
     LightScreenComp(modifier = modifier, sensorManager = sensorManager )
     LocationScreen(fusedLocationClient = fusedLocationClient)
 }

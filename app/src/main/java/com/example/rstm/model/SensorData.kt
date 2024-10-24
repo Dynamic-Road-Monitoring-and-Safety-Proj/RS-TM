@@ -1,7 +1,6 @@
 package com.example.rstm.model
 
 import android.location.Location
-import java.sql.Timestamp
 
 // Data class to store sensor data similar to a state class as this is the point of absolute truth for the collective VMs.
 

@@ -35,7 +35,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.rstm.model.SensorData
-import com.example.rstm.roomImplementation.RoomDao
 import com.example.rstm.ui.screens.Activated
 import com.example.rstm.ui.screens.CameraPreviewScreen
 import com.example.rstm.ui.screens.CameraScreen
@@ -163,7 +162,7 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(Modifier.padding(innerPadding), navController)
                         }
                         composable("accelerometer") {
-                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager)
+                            AccelerometerScreen(Modifier.padding(innerPadding), sensorManager, changeAccData)
                         }
                         composable("gyro") {
                             GyroscopeScreen(modifier = Modifier.padding(innerPadding), sensorManager)
