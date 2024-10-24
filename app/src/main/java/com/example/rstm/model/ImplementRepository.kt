@@ -11,7 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class ImplementRepository(context: Context) {
+class ImplementRepository() {
 
     private val state = MutableLiveData(State())
 

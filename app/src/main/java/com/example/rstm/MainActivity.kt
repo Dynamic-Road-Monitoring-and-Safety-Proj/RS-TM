@@ -152,7 +152,7 @@ class MainActivity : ComponentActivity() {
 
         checkPermission()
 
-        val implementVM = ImplementVM(sensorManager, fusedLocationClient, ImplementRepository(applicationContext))
+        val implementVM = ImplementVM(sensorManager, fusedLocationClient, ImplementRepository())
 
         enableEdgeToEdge()
 
