@@ -30,7 +30,10 @@ fun AccelerometerScreen(
 
     Column(modifier) {
         LaunchedEffect(Unit) {
-            delay(2000) // 2-second delay
+            while (true) {
+                delay(500) // 2-second delay
+                changeAccData(accelerometerVM.x.value, accelerometerVM.y.value, accelerometerVM.z.value)
+            }
         }
 
         Text(text = "Accelerometer Screen", modifier = modifier.fillMaxWidth())

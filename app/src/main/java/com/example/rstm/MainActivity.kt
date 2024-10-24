@@ -128,11 +128,9 @@ class MainActivity : ComponentActivity() {
     fun changeAccData(x: Float, y: Float, z: Float) {
         sensorData.accelerometerData = Triple(x, y, z)
     }
-
     fun changeMagData(x: Float, y: Float, z: Float) {
         sensorData.magneticData = Triple(x, y, z)
     }
-
     fun changeLightData(light: Float) {
         sensorData.lightData = light
     }

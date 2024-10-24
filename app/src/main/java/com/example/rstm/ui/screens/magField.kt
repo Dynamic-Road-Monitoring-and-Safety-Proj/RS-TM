@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.MagneticFieldScreenVM
@@ -22,6 +23,11 @@ fun MagFieldScreen(
         magVM.startMagField(sensorManager)
         onDispose {
             magVM.stopMagField(sensorManager)
+        }
+    }
+    LaunchedEffect(Unit) {
+        while (true) {
+            function(magVM.x2.value, magVM.y2.value, magVM.z2.value)
         }
     }
     Column(modifier) {

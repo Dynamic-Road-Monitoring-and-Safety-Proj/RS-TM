@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
+import com.example.rstm.model.SensorData
 import com.example.rstm.ui.screens.LocationScreen
 import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -212,8 +213,29 @@ fun ImplementScreen(
 
 @Composable
 fun SensorSheetContent2C(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
+    val sensorDataIMP = SensorData()
+
+    fun changeGyroData(x: Float, y: Float, z: Float) {
+        sensorDataIMP.gyroscopeData = Triple(x, y, z)
+    }
+    fun changeAccData(x: Float, y: Float, z: Float) {
+        sensorDataIMP.accelerometerData = Triple(x, y, z)
+    }
+
+    fun changeMagData(x: Float, y: Float, z: Float) {
+        sensorDataIMP.magneticData = Triple(x, y, z)
+    }
+
+    fun changeLightData(light: Float) {
+        sensorDataIMP.lightData = light
+    }
+    fun changeLocationData(location: android.location.Location) {
+        sensorDataIMP.locationData = location
+    }
+
+
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager, function = ::changeGyroData)
-    AccelerometerScreen(modifier = modifier, sensorManager, changeAccData)
+    AccelerometerScreen(modifier = modifier, sensorManager, ::changeAccData)
     LightScreenComp(
         modifier = modifier,
         sensorManager = sensorManager,
