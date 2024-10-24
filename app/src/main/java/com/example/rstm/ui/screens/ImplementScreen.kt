@@ -200,7 +200,8 @@ fun ImplementScreen(
                             val result = viewModel.captureVideo(videoCapture, context)
                             captureListener = result.second
                             recording = result.first
-                            viewModel.getRepository().saveToDatabase(context)
+                            viewModel.getRepository().saveSensorDataAsCSV(context)
+                            viewModel.getRepository().saveToDatabase()
                             // Start a new buffered recording
                             onRecording = recording?.start(
                                 executor,

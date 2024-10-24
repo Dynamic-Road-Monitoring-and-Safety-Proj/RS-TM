@@ -46,6 +46,7 @@ import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.example.rstm.roomImplementation.AppDatabase
+import java.sql.Timestamp
 
 
 class MainActivity : ComponentActivity() {
@@ -122,8 +123,9 @@ class MainActivity : ComponentActivity() {
     // Initialize sensor Data class
     val sensorData = SensorData()
 
-    fun changeGyroData(x: Float, y: Float, z: Float) {
+    fun changeGyroData(x: Float, y: Float, z: Float) { //also time
         sensorData.gyroscopeData = Triple(x, y, z)
+        sensorData.timestamp = Timestamp(System.currentTimeMillis())
     }
     fun changeAccData(x: Float, y: Float, z: Float) {
         sensorData.accelerometerData = Triple(x, y, z)
