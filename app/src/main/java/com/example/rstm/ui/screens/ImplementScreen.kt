@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.model.SensorData
 import com.example.rstm.ui.screens.LocationScreen
 import com.example.rstm.viewModels.ImplementVM
@@ -75,6 +76,7 @@ fun ImplementScreen(
     val qualitySelector = QualitySelector.fromOrderedList(
         listOf(Quality.FHD, Quality.HD, Quality.HIGHEST)
     )
+    val sensorData = SensorData()
 
     val recorder = recBuilder.setQualitySelector(qualitySelector).build()
     val videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
@@ -93,6 +95,12 @@ fun ImplementScreen(
     val executor = Executors.newCachedThreadPool()
     var captureListener : Consumer<VideoRecordEvent>
 
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(500)
+            viewModel.getRepository().listMaker(sensorData)
+        }
+    }
     LaunchedEffect(Unit) {
         scope.launch {
             try {
@@ -137,7 +145,7 @@ fun ImplementScreen(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 0.dp,
         sheetContent = {
-            SensorSheetContent2C(sensorManager = viewModel.getSensorManager(), fusedLocationClient = viewModel.getFusedLocation() , modifier = Modifier)
+            SensorSheetContent2C(data = sensorData, sensorManager = viewModel.getSensorManager(), fusedLocationClient = viewModel.getFusedLocation() , modifier = Modifier)
         }
     ) { padding ->
         Box(
@@ -192,7 +200,8 @@ fun ImplementScreen(
                             val result = viewModel.captureVideo(videoCapture, context)
                             captureListener = result.second
                             recording = result.first
-                            viewModel.getRepository().saveToDatabase(context)
+                            viewModel.getRepository().saveSensorDataAsCSV(context)
+                            viewModel.getRepository().saveToDatabase()
                             // Start a new buffered recording
                             onRecording = recording?.start(
                                 executor,
@@ -212,8 +221,8 @@ fun ImplementScreen(
 }
 
 @Composable
-fun SensorSheetContent2C(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
-    val sensorDataIMP = SensorData()
+fun SensorSheetContent2C(data: SensorData,sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
+    val sensorDataIMP = data
 
     fun changeGyroData(x: Float, y: Float, z: Float) {
         sensorDataIMP.gyroscopeData = Triple(x, y, z)
@@ -232,6 +241,7 @@ fun SensorSheetContent2C(sensorManager: SensorManager, fusedLocationClient : Fus
     fun changeLocationData(location: android.location.Location) {
         sensorDataIMP.locationData = location
     }
+
 
 
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager, function = ::changeGyroData)

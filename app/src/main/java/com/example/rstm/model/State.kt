@@ -8,7 +8,8 @@ data class State(
     var gyroUri: String?,
     var locationUri: String?,
     var lightUri: String?,
-    var timeUri: String?
+    var timeUri: String?,
+    var csvUri: Uri?
 ){
-    constructor() : this(null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null)
 }

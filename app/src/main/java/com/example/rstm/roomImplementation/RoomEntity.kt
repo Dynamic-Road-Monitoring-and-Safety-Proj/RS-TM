@@ -9,9 +9,5 @@ import androidx.room.PrimaryKey
 data class RoomEntity(
     @PrimaryKey(autoGenerate = true) val id: Int,
     @ColumnInfo(name = "video_uri_list") val videoUriList: List<Uri>?, // This should be a String
-    @ColumnInfo(name = "accelerometer_uri") val accelerometerUri: String?,
-    @ColumnInfo(name = "gyro_uri") val gyroUri: String?,
-    @ColumnInfo(name = "location_uri") val locationUri: String?,
-    @ColumnInfo(name = "light_uri") val lightUri: String?,
-    @ColumnInfo(name = "time_uri") val timeUri: String?
+    @ColumnInfo(name = "csv_uri") val csvUri: Uri?
 )

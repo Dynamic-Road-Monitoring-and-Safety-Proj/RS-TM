@@ -61,6 +61,7 @@ import com.arthenica.mobileffmpeg.Config
 import com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL
 import com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS
 import com.arthenica.mobileffmpeg.FFmpeg
+import com.example.rstm.model.SensorData
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -69,6 +70,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -311,14 +313,34 @@ fun CameraPreviewScreen(
 
 @Composable
 fun SensorSheetContent2(sensorManager: SensorManager, fusedLocationClient : FusedLocationProviderClient, modifier: Modifier) {
+    // Initialize sensor Data class
+    val sensorData = SensorData()
+
+    fun changeGyroData(x: Float, y: Float, z: Float) { //also time
+        sensorData.gyroscopeData = Triple(x, y, z)
+        sensorData.timestamp = Timestamp(System.currentTimeMillis())
+    }
+    fun changeAccData(x: Float, y: Float, z: Float) {
+        sensorData.accelerometerData = Triple(x, y, z)
+    }
+    fun changeMagData(x: Float, y: Float, z: Float) {
+        sensorData.magneticData = Triple(x, y, z)
+    }
+    fun changeLightData(light: Float) {
+        sensorData.lightData = light
+    }
+    fun changeLocationData(location: android.location.Location) {
+        sensorData.locationData = location
+    }
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager, function = ::changeGyroData)
-    AccelerometerScreen(modifier = modifier, sensorManager, changeAccData)
+    AccelerometerScreen(modifier = modifier, sensorManager, ::changeAccData)
     LightScreenComp(
         modifier = modifier,
         sensorManager = sensorManager,
         function = :: changeLightData
     )
     LocationScreen(fusedLocationClient = fusedLocationClient, function = ::changeLocationData)
+    MagFieldScreen(modifier, sensorManager, ::changeMagData)
 }
 private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>) {
     if (uriList.isNotEmpty()) {
