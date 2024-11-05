@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.MagneticFieldScreenVM
+import kotlinx.coroutines.delay
 
 @Composable
 fun MagFieldScreen(
@@ -28,6 +29,7 @@ fun MagFieldScreen(
     LaunchedEffect(Unit) {
         while (true) {
             function(magVM.x2.value, magVM.y2.value, magVM.z2.value)
+            delay(100)
         }
     }
     Column(modifier) {
