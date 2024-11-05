@@ -31,7 +31,7 @@ fun AccelerometerScreen(
     Column(modifier) {
         LaunchedEffect(Unit) {
             while (true) {
-                delay(500) // 2-second delay
+                delay(500) // 0.5-second delay
                 changeAccData(accelerometerVM.x.value, accelerometerVM.y.value, accelerometerVM.z.value)
             }
         }

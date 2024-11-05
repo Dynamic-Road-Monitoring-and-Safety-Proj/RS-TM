@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.viewModels.GyroViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun GyroscopeScreen(
@@ -26,8 +27,10 @@ fun GyroscopeScreen(
     LaunchedEffect(Unit) {
         while (true) {
             function(viewModel.x1.floatValue, viewModel.y1.floatValue, viewModel.z1.floatValue)
+            delay(100)
         }
     }
+
     Column(modifier) {
         Text(text = "Gyroscope Screen", modifier = modifier.fillMaxWidth())
         Text(text = if (viewModel.gyroscope != null) "GyroS is available" else "GyroS is not available")
