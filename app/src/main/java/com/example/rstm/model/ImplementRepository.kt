@@ -20,7 +20,6 @@ class ImplementRepository() {
     private val state = MutableLiveData(State())
 
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
-    private val CSVUriList = mutableListOf<Uri>()
 
     private val scope = CoroutineScope(Dispatchers.IO)
     val sensorDataList : MutableList<SensorData> = mutableListOf()
