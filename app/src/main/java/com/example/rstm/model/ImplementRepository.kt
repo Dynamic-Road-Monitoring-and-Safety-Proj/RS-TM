@@ -58,8 +58,6 @@ class ImplementRepository() {
         printUriList()
     }
 
-
-
     // Find the URI of the video file by name
     private fun findVideoUriByName(context: Context, fileName: String): Uri? {
         val projection = arrayOf(MediaStore.Video.Media._ID)
@@ -142,13 +140,16 @@ class ImplementRepository() {
         }
     }
 
-
     fun saveToDatabase() {
+        // Create a new list from the current _uriList
+        val uriListCopy = _uriList.value?.toList() ?: emptyList()  // Create an immutable copy
+
         val roomEntity = RoomEntity(
             id = 0,
-            videoUriList = state.value?.videoUriList,
+            videoUriList = uriListCopy,  // Use the copy of _uriList
             csvUri = state.value?.csvUri
         )
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 Log.d("SaveToDatabase", "Inserting: $roomEntity")
