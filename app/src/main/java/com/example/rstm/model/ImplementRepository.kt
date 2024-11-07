@@ -20,7 +20,6 @@ class ImplementRepository() {
     private val state = MutableLiveData(State())
 
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
-    private val CSVUriList = mutableListOf<Uri>()
 
     private val scope = CoroutineScope(Dispatchers.IO)
     val sensorDataList : MutableList<SensorData> = mutableListOf()
@@ -33,17 +32,30 @@ class ImplementRepository() {
 
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
+    // Helper function to log the current _uriList state
+    private fun printUriList() {
+        Log.d("ImplementRepository", "Current URI List: ${_uriList.value ?: emptyList<Uri>()}")
+    }
+
     fun updateUriList(newList: List<Uri>) {
         _uriList.postValue(newList)  // Use postValue for background thread
+        Log.d("ImplementRepository", "updateUriList called. New list size: ${newList.size}")
+        printUriList()
     }
+
     fun getUriList(): MutableList<Uri>? {
-        return _uriList.value?.toMutableList() ?: mutableListOf()
+        val currentList = _uriList.value?.toMutableList() ?: mutableListOf()
+        Log.d("ImplementRepository", "getUriList called. Current list size: ${currentList.size}")
+        printUriList()
+        return currentList
     }
 
     fun addUri(newUri: Uri) {
         val currentList = _uriList.value?.toMutableList() ?: mutableListOf()  // Get current list or create a new one
         currentList.add(newUri)  // Add the new Uri
         updateUriList(currentList)  // Update LiveData with new list
+        Log.d("ImplementRepository", "addUri called. Added URI: $newUri")
+        printUriList()
     }
 
     // Find the URI of the video file by name
@@ -128,13 +140,16 @@ class ImplementRepository() {
         }
     }
 
-
     fun saveToDatabase() {
+        // Create a new list from the current _uriList
+        val uriListCopy = _uriList.value?.toList() ?: emptyList()  // Create an immutable copy
+
         val roomEntity = RoomEntity(
             id = 0,
-            videoUriList = state.value?.videoUriList,
+            videoUriList = uriListCopy,  // Use the copy of _uriList
             csvUri = state.value?.csvUri
         )
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 Log.d("SaveToDatabase", "Inserting: $roomEntity")

@@ -24,7 +24,6 @@ fun LocationScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
-
     // Check and request permissions if necessary
     LaunchedEffect(lifecycleOwner) {
         while (true) {
