@@ -139,14 +139,43 @@ class ImplementRepository() {
             Log.e("SaveSensorDataAsCSV", "Error saving CSV: ${e.message}", e)
         }
     }
+    fun saveUriListAsCSV(context: Context) {
+        val csvFileName = "video_uri.csv"
+        val filePath = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), csvFileName)
 
-    fun saveToDatabase() {
-        // Create a new list from the current _uriList
-        val uriListCopy = _uriList.value?.toList() ?: emptyList()  // Create an immutable copy
+        try {
+            // Build the CSV content from the URI list
+            val csvBuilder = StringBuilder()
+            csvBuilder.append("VideoUri\n")  // Add a header for the CSV file
+
+            _uriList.value?.forEach { uri ->
+                csvBuilder.append(uri.toString()).append("\n")  // Add each URI as a string
+            }
+
+            // Write the CSV content to the file
+            FileOutputStream(filePath).use { fos ->
+                OutputStreamWriter(fos).use { writer ->
+                    writer.write(csvBuilder.toString())
+                }
+            }
+
+            Log.d("SaveUriListAsCSV", "CSV saved at: ${filePath.absolutePath}")
+
+            // Update LiveData to reflect that the CSV has been saved
+            state.value = state.value?.copy(csvUri = Uri.fromFile(filePath))
+            state.postValue(state.value)
+        } catch (e: Exception) {
+            Log.e("SaveUriListAsCSV", "Error saving URI list as CSV: ${e.message}", e)
+        }
+    }
+
+    fun saveToDatabase(context: Context) {
+        val csvFileName = "video_uri.csv"
+        val filePath = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), csvFileName)
 
         val roomEntity = RoomEntity(
             id = 0,
-            videoUriList = uriListCopy,  // Use the copy of _uriList
+            videoUriFile = filePath.absolutePath,  // Save the absolute path instead of just the file name
             csvUri = state.value?.csvUri
         )
 
@@ -160,4 +189,5 @@ class ImplementRepository() {
             }
         }
     }
+
 }
