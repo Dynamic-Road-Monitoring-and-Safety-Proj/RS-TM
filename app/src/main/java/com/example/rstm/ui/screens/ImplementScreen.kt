@@ -202,7 +202,7 @@ fun ImplementScreen(
                             recording = result.first
                             viewModel.getRepository().saveSensorDataAsCSV(context)
                             viewModel.getRepository().saveUriListAsCSV(context)
-                            viewModel.getRepository().saveToDatabase()
+                            viewModel.getRepository().saveToDatabase(context)
                             // Start a new buffered recording
                             onRecording = recording?.start(
                                 executor,

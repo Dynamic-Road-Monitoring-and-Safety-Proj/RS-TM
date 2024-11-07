@@ -17,7 +17,7 @@ import kotlinx.coroutines.delay
 fun MagFieldScreen(
     modifier: Modifier,
     sensorManager: SensorManager,
-    function: (Float, Float, Float) -> Unit
+    function: (Float, Float, Float) -> Unit   // meant to be used for updating sensorData
 ) {
     val magVM : MagneticFieldScreenVM = viewModel()
     DisposableEffect(sensorManager) {
@@ -26,12 +26,12 @@ fun MagFieldScreen(
             magVM.stopMagField(sensorManager)
         }
     }
-    LaunchedEffect(Unit) {
-        while (true) {
-            function(magVM.x2.value, magVM.y2.value, magVM.z2.value)
-            delay(100)
-        }
-    }
+//    LaunchedEffect(Unit) {
+//        while (true) {
+//            function(magVM.x2.value, magVM.y2.value, magVM.z2.value)
+//            delay(100)
+//        }
+//    }
     Column(modifier) {
         Text(text = "MagField Screen", modifier = modifier.fillMaxWidth())
         if (magVM.magField != null) {
