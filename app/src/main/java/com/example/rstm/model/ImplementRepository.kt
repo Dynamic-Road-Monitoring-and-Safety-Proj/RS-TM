@@ -34,16 +34,25 @@ class ImplementRepository() {
     // Helper to update _uriList safely
     fun updateUriList(newList: List<Uri>) {
         _uriList.postValue(newList)  // Use postValue for background thread
+        Log.d("ImplementRepository", "updateUriList called. New list size: ${newList.size}")
+        Log.d("ImplementRepository", "Current URI List: $newList")
     }
+
     fun getUriList(): MutableList<Uri>? {
-        return _uriList.value?.toMutableList() ?: mutableListOf()
+        val currentList = _uriList.value?.toMutableList() ?: mutableListOf()
+        Log.d("ImplementRepository", "getUriList called. Current list size: ${currentList.size}")
+        Log.d("ImplementRepository", "Current URI List: $currentList")
+        return currentList
     }
 
     fun addUri(newUri: Uri) {
         val currentList = _uriList.value?.toMutableList() ?: mutableListOf()  // Get current list or create a new one
         currentList.add(newUri)  // Add the new Uri
         updateUriList(currentList)  // Update LiveData with new list
+        Log.d("ImplementRepository", "addUri called. Added URI: $newUri")
+        Log.d("ImplementRepository", "Updated URI List after adding: $currentList")
     }
+
 
     // Find the URI of the video file by name
     private fun findVideoUriByName(context: Context, fileName: String): Uri? {
