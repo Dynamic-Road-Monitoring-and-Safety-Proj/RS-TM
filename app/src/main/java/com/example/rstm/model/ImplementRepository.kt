@@ -32,16 +32,21 @@ class ImplementRepository() {
 
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
+    // Helper function to log the current _uriList state
+    private fun printUriList() {
+        Log.d("ImplementRepository", "Current URI List: ${_uriList.value ?: emptyList<Uri>()}")
+    }
+
     fun updateUriList(newList: List<Uri>) {
         _uriList.postValue(newList)  // Use postValue for background thread
         Log.d("ImplementRepository", "updateUriList called. New list size: ${newList.size}")
-        Log.d("ImplementRepository", "Current URI List: $newList")
+        printUriList()
     }
 
     fun getUriList(): MutableList<Uri>? {
         val currentList = _uriList.value?.toMutableList() ?: mutableListOf()
         Log.d("ImplementRepository", "getUriList called. Current list size: ${currentList.size}")
-        Log.d("ImplementRepository", "Current URI List: $currentList")
+        printUriList()
         return currentList
     }
 
@@ -50,8 +55,9 @@ class ImplementRepository() {
         currentList.add(newUri)  // Add the new Uri
         updateUriList(currentList)  // Update LiveData with new list
         Log.d("ImplementRepository", "addUri called. Added URI: $newUri")
-        Log.d("ImplementRepository", "Updated URI List after adding: $currentList")
+        printUriList()
     }
+
 
 
     // Find the URI of the video file by name
