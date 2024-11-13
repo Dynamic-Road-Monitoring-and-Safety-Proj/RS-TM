@@ -7,6 +7,10 @@ import ImplementRepository
 import ImplementScreen
 import LightScreenComp
 import android.Manifest
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.SensorManager
@@ -140,10 +144,25 @@ class MainActivity : ComponentActivity() {
         sensorData.locationData = location
     }
 
-
+    
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize Bluetooth adapter and scanner
+        val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        val scanner = bluetoothAdapter.bluetoothLeScanner
+
+        scanner.startScan(object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult?) {
+                val device = result?.device
+                if (device != null && device.address == deviceAddress) {
+                    // Connect to the device and set up GATT
+                    device.connectGatt(applicationContext, false, gattCallback)
+                    scanner.stopScan(this)
+                }
+            }
+        })
 
         appDatabase = Room.databaseBuilder(applicationContext, AppDatabase::class.java, AppDatabase.NAME).build()
 
