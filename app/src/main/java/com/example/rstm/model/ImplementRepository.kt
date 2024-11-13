@@ -108,15 +108,14 @@ class ImplementRepository() {
                             "${sensorData.accelerometerData.first}," +
                             "${sensorData.accelerometerData.second}," +
                             "${sensorData.accelerometerData.third}," +
-                            "${sensorData.magneticData.first}," +
-                            "${sensorData.magneticData.second}," +
-                            "${sensorData.magneticData.third}," +
                             "${sensorData.gyroscopeData.first}," +
                             "${sensorData.gyroscopeData.second}," +
                             "${sensorData.gyroscopeData.third}," +
                             "${sensorData.lightData}," +
                             "${sensorData.locationData.latitude}," +
-                            "${sensorData.locationData.longitude}\n"
+                            "${sensorData.locationData.longitude}\n"+
+                            "${sensorData.locationData.altitude}\n"+
+                            "${sensorData.locationData.speed}\n"
                 )
             }
 
