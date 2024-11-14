@@ -155,6 +155,7 @@ class MainActivity : ComponentActivity() {
 
     private val gattCallback = object : BluetoothGattCallback() {
 
+        @SuppressLint("MissingPermission")
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 // Connection successful, discover services
@@ -164,7 +165,7 @@ class MainActivity : ComponentActivity() {
                 Log.d("BLE", "Disconnected from GATT server")
             }
         }
-        private val YOUR_SERVICE_UUID = UUID.fromString("service-uuid-from-manufacturer")
+        private val YOUR_SERVICE_UUID = UUID.fromString("service-uuid-from-manufacturer")//TODO set these to actual address of microcontroller
         private val YOUR_CHARACTERISTIC_UUID = UUID.fromString("characteristic-uuid-from-manufacturer")
         private val CLIENT_CHARACTERISTIC_CONFIG_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
@@ -209,6 +210,7 @@ class MainActivity : ComponentActivity() {
 
         scanner.startScan(object : ScanCallback() {
             @SuppressLint("MissingPermission")
+            val deviceAddress = "device-address"  //TODO set this to actuall address of microcontroller
             override fun onScanResult(callbackType: Int, result: ScanResult?) {
                 val device = result?.device
                 if (device != null && device.address == deviceAddress) {
