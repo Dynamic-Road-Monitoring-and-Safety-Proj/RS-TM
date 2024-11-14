@@ -13,6 +13,7 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -108,6 +109,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("MissingPermission")
+    private fun checkBluetooth() {
+        val bluetoothManager: BluetoothManager = getSystemService(BluetoothManager::class.java)!!
+        val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
+        if (bluetoothAdapter == null) {
+            // Device doesn't support Bluetooth
+        } else if (bluetoothAdapter.isEnabled == false) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            val REQUEST_ENABLE_BT = 1
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+        }
+    }
     // Request external storage permission
     private fun checkExternalStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
