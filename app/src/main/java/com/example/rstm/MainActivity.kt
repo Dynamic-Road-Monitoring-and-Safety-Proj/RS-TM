@@ -116,14 +116,52 @@ class MainActivity : ComponentActivity() {
             checkExternalStoragePermission()
         }
     }
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    @SuppressLint("MissingPermission")
+    private inner class AcceptThread : Thread() {
+        val NAME = "BluetoothChatService"
+        val MY_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66")
+
+        private val mmServerSocket: BluetoothServerSocket? by lazy(LazyThreadSafetyMode.NONE) {
+            bluetoothAdapter?.listenUsingInsecureRfcommWithServiceRecord(NAME, MY_UUID)
+        }
+
+        override fun run() {
+            // Keep listening until exception occurs or a socket is returned.
+            var shouldLoop = true
+            while (shouldLoop) {
+                val socket: BluetoothSocket? = try {
+                    mmServerSocket?.accept()
+                } catch (e: IOException) {
+                    Log.e(TAG, "Socket's accept() method failed", e)
+                    shouldLoop = false
+                    null
+                }
+                socket?.also {
+                    manageMyConnectedSocket(it)
+                    mmServerSocket?.close()
+                    shouldLoop = false
+                }
+            }
+        }
+
+        // Closes the connect socket and causes the thread to finish.
+        fun cancel() {
+            try {
+                mmServerSocket?.close()
+            } catch (e: IOException) {
+                Log.e(TAG, "Could not close the connect socket", e)
+            }
+        }
+    }
 
     @SuppressLint("MissingPermission")
     private fun checkBluetooth() {
         val bluetoothManager: BluetoothManager = getSystemService(BluetoothManager::class.java)!!
-        val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
+        bluetoothAdapter = bluetoothManager.adapter
         if (bluetoothAdapter == null) {
             // Device doesn't support Bluetooth
-        } else if (bluetoothAdapter.isEnabled == false) {
+        } else if (bluetoothAdapter!!.isEnabled == false) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             val REQUEST_ENABLE_BT = 1
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
@@ -132,42 +170,6 @@ class MainActivity : ComponentActivity() {
         pairedDevices?.forEach { device ->
             val deviceName = device.name
             val deviceHardwareAddress = device.address // MAC address
-        }
-        private inner class AcceptThread : Thread() {
-            val NAME = "BluetoothChatService"
-            val MY_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66")
-
-            private val mmServerSocket: BluetoothServerSocket? by lazy(LazyThreadSafetyMode.NONE) {
-                bluetoothAdapter?.listenUsingInsecureRfcommWithServiceRecord(NAME, MY_UUID)
-            }
-
-            override fun run() {
-                // Keep listening until exception occurs or a socket is returned.
-                var shouldLoop = true
-                while (shouldLoop) {
-                    val socket: BluetoothSocket? = try {
-                        mmServerSocket?.accept()
-                    } catch (e: IOException) {
-                        Log.e(TAG, "Socket's accept() method failed", e)
-                        shouldLoop = false
-                        null
-                    }
-                    socket?.also {
-                        manageMyConnectedSocket(it)
-                        mmServerSocket?.close()
-                        shouldLoop = false
-                    }
-                }
-            }
-
-            // Closes the connect socket and causes the thread to finish.
-            fun cancel() {
-                try {
-                    mmServerSocket?.close()
-                } catch (e: IOException) {
-                    Log.e(TAG, "Could not close the connect socket", e)
-                }
-            }
         }
     }
     // Request external storage permission
