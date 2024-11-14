@@ -117,6 +117,41 @@ class MainActivity : ComponentActivity() {
         }
     }
     private var bluetoothAdapter: BluetoothAdapter? = null
+
+    @SuppressLint("MissingPermission")
+    private fun manageMyConnectedSocket(socket: BluetoothSocket) {
+        // Obtain input and output streams for communication
+        val inputStream = socket.inputStream
+        val outputStream = socket.outputStream
+
+        // Example: Reading and writing data
+        val buffer = ByteArray(1024) // Buffer for storing incoming data
+        var bytes: Int
+
+        // Read data in a background thread to avoid blocking the main thread
+        Thread {
+            try {
+                // Keep reading data until an exception occurs
+                while (true) {
+                    bytes = inputStream.read(buffer)
+                    val incomingMessage = String(buffer, 0, bytes)
+                    Log.d("Bluetooth", "Received message: $incomingMessage")
+
+                    // Optionally, you can write a response
+                    val responseMessage = "Message received"
+                    outputStream.write(responseMessage.toByteArray())
+                }
+            } catch (e: IOException) {
+                Log.e(TAG, "Error managing connected socket", e)
+                try {
+                    socket.close()
+                } catch (closeException: IOException) {
+                    Log.e(TAG, "Could not close connected socket", closeException)
+                }
+            }
+        }.start()
+    }
+
     @SuppressLint("MissingPermission")
     private inner class AcceptThread : Thread() {
         val NAME = "BluetoothChatService"
