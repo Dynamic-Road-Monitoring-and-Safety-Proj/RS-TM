@@ -34,6 +34,12 @@ fun LocationScreen(
             delay(5000)
         }
     }
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentLocation?.let { function(it) }
+            delay(100)
+        }
+    }
     Column(modifier = modifier.fillMaxWidth()) {
         Text(text = "Location Screen", modifier = modifier)
         currentLocation?.let {

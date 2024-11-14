@@ -13,5 +13,4 @@ abstract class AppDatabase : RoomDatabase() {
         const val NAME = "room.db"
     }
     abstract fun getDao() : RoomDao
-
 }
