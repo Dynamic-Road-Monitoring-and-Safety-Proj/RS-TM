@@ -153,73 +153,9 @@ class MainActivity : ComponentActivity() {
         sensorData.locationData = location
     }
 
-    private val gattCallback = object : BluetoothGattCallback() {
-
-        @SuppressLint("MissingPermission")
-        override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                // Connection successful, discover services
-                gatt?.discoverServices()
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                // Handle disconnection
-                Log.d("BLE", "Disconnected from GATT server")
-            }
-        }
-        private val YOUR_SERVICE_UUID = UUID.fromString("service-uuid-from-manufacturer")//TODO set these to actual address of microcontroller
-        private val YOUR_CHARACTERISTIC_UUID = UUID.fromString("characteristic-uuid-from-manufacturer")
-        private val CLIENT_CHARACTERISTIC_CONFIG_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-
-        @SuppressLint("MissingPermission")
-        override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                // Locate the specific service and characteristic
-                val service = gatt?.getService(YOUR_SERVICE_UUID)
-                val characteristic = service?.getCharacteristic(YOUR_CHARACTERISTIC_UUID)
-
-                if (characteristic != null) {
-                    // Enable notifications for the characteristic
-                    gatt.setCharacteristicNotification(characteristic, true)
-
-                    // Some BLE devices require setting a descriptor for notifications
-                    val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG_UUID)
-                    descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                    gatt.writeDescriptor(descriptor)
-                }
-            }
-        }
-
-        override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
-            // This method is called when the characteristic notifies with new data
-            val data = characteristic?.value
-            val receivedData = data?.let { String(it) } ?: "No data"
-
-            Log.d("BLE", "Data received: $receivedData")
-            // You can update the UI with the received data here or send it to a handler
-        }
-    }
-
-
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Initialize Bluetooth adapter and scanner
-        val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        val scanner = bluetoothAdapter.bluetoothLeScanner
-
-        scanner.startScan(object : ScanCallback() {
-            @SuppressLint("MissingPermission")
-            val deviceAddress = "device-address"  //TODO set this to actuall address of microcontroller
-            override fun onScanResult(callbackType: Int, result: ScanResult?) {
-                val device = result?.device
-                if (device != null && device.address == deviceAddress) {
-                    // Connect to the device and set up GATT
-                    device.connectGatt(applicationContext, false, gattCallback)
-                    scanner.stopScan(this)
-                }
-            }
-        })
 
         appDatabase = Room.databaseBuilder(applicationContext, AppDatabase::class.java, AppDatabase.NAME).build()
 
