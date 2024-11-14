@@ -9,6 +9,7 @@ import LightScreenComp
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
@@ -120,6 +121,11 @@ class MainActivity : ComponentActivity() {
             val REQUEST_ENABLE_BT = 1
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
         }
+        val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
+        pairedDevices?.forEach { device ->
+            val deviceName = device.name
+            val deviceHardwareAddress = device.address // MAC address
+        }
     }
     // Request external storage permission
     private fun checkExternalStoragePermission() {
@@ -169,6 +175,7 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        checkBluetooth()
 
         appDatabase = Room.databaseBuilder(applicationContext, AppDatabase::class.java, AppDatabase.NAME).build()
 
@@ -222,6 +229,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        // Don't forget to unregister the ACTION_FOUND receiver.
+        unregisterReceiver(receiver)
     }
 }
 
