@@ -16,9 +16,15 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothServerSocket
+import android.bluetooth.BluetoothSocket
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.content.BroadcastReceiver
+import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.SensorManager
 import android.net.Uri
@@ -58,6 +64,7 @@ import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.example.rstm.roomImplementation.AppDatabase
+import java.io.IOException
 import java.sql.Timestamp
 import java.util.UUID
 
@@ -126,6 +133,42 @@ class MainActivity : ComponentActivity() {
             val deviceName = device.name
             val deviceHardwareAddress = device.address // MAC address
         }
+        private inner class AcceptThread : Thread() {
+            val NAME = "BluetoothChatService"
+            val MY_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66")
+
+            private val mmServerSocket: BluetoothServerSocket? by lazy(LazyThreadSafetyMode.NONE) {
+                bluetoothAdapter?.listenUsingInsecureRfcommWithServiceRecord(NAME, MY_UUID)
+            }
+
+            override fun run() {
+                // Keep listening until exception occurs or a socket is returned.
+                var shouldLoop = true
+                while (shouldLoop) {
+                    val socket: BluetoothSocket? = try {
+                        mmServerSocket?.accept()
+                    } catch (e: IOException) {
+                        Log.e(TAG, "Socket's accept() method failed", e)
+                        shouldLoop = false
+                        null
+                    }
+                    socket?.also {
+                        manageMyConnectedSocket(it)
+                        mmServerSocket?.close()
+                        shouldLoop = false
+                    }
+                }
+            }
+
+            // Closes the connect socket and causes the thread to finish.
+            fun cancel() {
+                try {
+                    mmServerSocket?.close()
+                } catch (e: IOException) {
+                    Log.e(TAG, "Could not close the connect socket", e)
+                }
+            }
+        }
     }
     // Request external storage permission
     private fun checkExternalStoragePermission() {
@@ -172,10 +215,31 @@ class MainActivity : ComponentActivity() {
         sensorData.locationData = location
     }
 
+    private val receiver = object : BroadcastReceiver() {
+
+        @SuppressLint("MissingPermission")
+        override fun onReceive(context: Context, intent: Intent) {
+            val action: String = intent.action.toString()
+            when(action) {
+                BluetoothDevice.ACTION_FOUND -> {
+                    // Discovery has found a device. Get the BluetoothDevice
+                    // object and its info from the Intent.
+                    val device: BluetoothDevice =
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)!!
+                    val deviceName = device.name
+                    val deviceHardwareAddress = device.address
+                }
+            }
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkBluetooth()
+
+        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+        registerReceiver(receiver, filter)
 
         appDatabase = Room.databaseBuilder(applicationContext, AppDatabase::class.java, AppDatabase.NAME).build()
 
