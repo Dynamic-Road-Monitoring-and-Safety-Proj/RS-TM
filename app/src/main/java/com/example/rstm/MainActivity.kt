@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
         // Example: Reading and writing data
         val buffer = ByteArray(1024) // Buffer for storing incoming data
         var bytes: Int
-
+        
         // Read data in a background thread to avoid blocking the main thread
         Thread {
             try {
