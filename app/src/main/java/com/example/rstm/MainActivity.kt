@@ -9,14 +9,22 @@ import LightScreenComp
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothServerSocket
+import android.bluetooth.BluetoothSocket
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.content.BroadcastReceiver
+import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.SensorManager
 import android.net.Uri
@@ -56,6 +64,7 @@ import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.example.rstm.roomImplementation.AppDatabase
+import java.io.IOException
 import java.sql.Timestamp
 import java.util.UUID
 
@@ -107,7 +116,97 @@ class MainActivity : ComponentActivity() {
             checkExternalStoragePermission()
         }
     }
+    private var bluetoothAdapter: BluetoothAdapter? = null
 
+    @SuppressLint("MissingPermission")
+    private fun manageMyConnectedSocket(socket: BluetoothSocket) {
+        // Obtain input and output streams for communication
+        val inputStream = socket.inputStream
+        val outputStream = socket.outputStream
+
+        // Example: Reading and writing data
+        val buffer = ByteArray(1024) // Buffer for storing incoming data
+        var bytes: Int
+        
+        // Read data in a background thread to avoid blocking the main thread
+        Thread {
+            try {
+                // Keep reading data until an exception occurs
+                while (true) {
+                    bytes = inputStream.read(buffer)
+                    val incomingMessage = String(buffer, 0, bytes)
+                    Log.d("Bluetooth", "Received message: $incomingMessage")
+
+                    // Optionally, you can write a response
+                    val responseMessage = "Message received"
+                    outputStream.write(responseMessage.toByteArray())
+                }
+            } catch (e: IOException) {
+                Log.e(TAG, "Error managing connected socket", e)
+                try {
+                    socket.close()
+                } catch (closeException: IOException) {
+                    Log.e(TAG, "Could not close connected socket", closeException)
+                }
+            }
+        }.start()
+    }
+
+    @SuppressLint("MissingPermission")
+    private inner class AcceptThread : Thread() {
+        val NAME = "BluetoothChatService"
+        val MY_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66")
+
+        private val mmServerSocket: BluetoothServerSocket? by lazy(LazyThreadSafetyMode.NONE) {
+            bluetoothAdapter?.listenUsingInsecureRfcommWithServiceRecord(NAME, MY_UUID)
+        }
+
+        override fun run() {
+            // Keep listening until exception occurs or a socket is returned.
+            var shouldLoop = true
+            while (shouldLoop) {
+                val socket: BluetoothSocket? = try {
+                    mmServerSocket?.accept()
+                } catch (e: IOException) {
+                    Log.e(TAG, "Socket's accept() method failed", e)
+                    shouldLoop = false
+                    null
+                }
+                socket?.also {
+                    manageMyConnectedSocket(it)
+                    mmServerSocket?.close()
+                    shouldLoop = false
+                }
+            }
+        }
+
+        // Closes the connect socket and causes the thread to finish.
+        fun cancel() {
+            try {
+                mmServerSocket?.close()
+            } catch (e: IOException) {
+                Log.e(TAG, "Could not close the connect socket", e)
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun checkBluetooth() {
+        val bluetoothManager: BluetoothManager = getSystemService(BluetoothManager::class.java)!!
+        bluetoothAdapter = bluetoothManager.adapter
+        if (bluetoothAdapter == null) {
+            // Device doesn't support Bluetooth
+        } else if (bluetoothAdapter!!.isEnabled == false) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            val REQUEST_ENABLE_BT = 1
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+        }
+        val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
+        pairedDevices?.forEach { device ->
+            val deviceName = device.name
+            val deviceHardwareAddress = device.address // MAC address
+        }
+    }
     // Request external storage permission
     private fun checkExternalStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -153,73 +252,31 @@ class MainActivity : ComponentActivity() {
         sensorData.locationData = location
     }
 
-    private val gattCallback = object : BluetoothGattCallback() {
+    private val receiver = object : BroadcastReceiver() {
 
         @SuppressLint("MissingPermission")
-        override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                // Connection successful, discover services
-                gatt?.discoverServices()
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                // Handle disconnection
-                Log.d("BLE", "Disconnected from GATT server")
-            }
-        }
-        private val YOUR_SERVICE_UUID = UUID.fromString("service-uuid-from-manufacturer")//TODO set these to actual address of microcontroller
-        private val YOUR_CHARACTERISTIC_UUID = UUID.fromString("characteristic-uuid-from-manufacturer")
-        private val CLIENT_CHARACTERISTIC_CONFIG_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-
-        @SuppressLint("MissingPermission")
-        override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                // Locate the specific service and characteristic
-                val service = gatt?.getService(YOUR_SERVICE_UUID)
-                val characteristic = service?.getCharacteristic(YOUR_CHARACTERISTIC_UUID)
-
-                if (characteristic != null) {
-                    // Enable notifications for the characteristic
-                    gatt.setCharacteristicNotification(characteristic, true)
-
-                    // Some BLE devices require setting a descriptor for notifications
-                    val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG_UUID)
-                    descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                    gatt.writeDescriptor(descriptor)
+        override fun onReceive(context: Context, intent: Intent) {
+            val action: String = intent.action.toString()
+            when(action) {
+                BluetoothDevice.ACTION_FOUND -> {
+                    // Discovery has found a device. Get the BluetoothDevice
+                    // object and its info from the Intent.
+                    val device: BluetoothDevice =
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)!!
+                    val deviceName = device.name
+                    val deviceHardwareAddress = device.address
                 }
             }
         }
-
-        override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
-            // This method is called when the characteristic notifies with new data
-            val data = characteristic?.value
-            val receivedData = data?.let { String(it) } ?: "No data"
-
-            Log.d("BLE", "Data received: $receivedData")
-            // You can update the UI with the received data here or send it to a handler
-        }
     }
-
-
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        checkBluetooth()
 
-        // Initialize Bluetooth adapter and scanner
-        val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        val scanner = bluetoothAdapter.bluetoothLeScanner
-
-        scanner.startScan(object : ScanCallback() {
-            @SuppressLint("MissingPermission")
-            val deviceAddress = "device-address"  //TODO set this to actuall address of microcontroller
-            override fun onScanResult(callbackType: Int, result: ScanResult?) {
-                val device = result?.device
-                if (device != null && device.address == deviceAddress) {
-                    // Connect to the device and set up GATT
-                    device.connectGatt(applicationContext, false, gattCallback)
-                    scanner.stopScan(this)
-                }
-            }
-        })
+        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+        registerReceiver(receiver, filter)
 
         appDatabase = Room.databaseBuilder(applicationContext, AppDatabase::class.java, AppDatabase.NAME).build()
 
@@ -273,6 +330,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        // Don't forget to unregister the ACTION_FOUND receiver.
+        unregisterReceiver(receiver)
     }
 }
 
