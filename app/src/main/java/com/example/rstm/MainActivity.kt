@@ -59,9 +59,7 @@ import com.example.rstm.roomImplementation.AppDatabase
 import java.sql.Timestamp
 import java.util.UUID
 
-
 class MainActivity : ComponentActivity() {
-
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var sensorManager: SensorManager
 
@@ -154,7 +152,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private val gattCallback = object : BluetoothGattCallback() {
-
         @SuppressLint("MissingPermission")
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -198,8 +195,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -210,13 +205,13 @@ class MainActivity : ComponentActivity() {
 
         scanner.startScan(object : ScanCallback() {
             @SuppressLint("MissingPermission")
-            val deviceAddress = "device-address"  //TODO set this to actuall address of microcontroller
+            val deviceAddress = "device-address"  //TODO set this to actual address of microcontroller
             override fun onScanResult(callbackType: Int, result: ScanResult?) {
                 val device = result?.device
                 if (device != null && device.address == deviceAddress) {
                     // Connect to the device and set up GATT
-                    device.connectGatt(applicationContext, false, gattCallback)
-                    scanner.stopScan(this)
+//                    device.connectGatt(applicationContext, false, gattCallback)
+//                    scanner.stopScan(this)
                 }
             }
         })
@@ -280,6 +275,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DefaultPreview() {
     RSTMTheme {
-
+        HomeScreen(Modifier.fillMaxSize(), rememberNavController())
     }
 }
