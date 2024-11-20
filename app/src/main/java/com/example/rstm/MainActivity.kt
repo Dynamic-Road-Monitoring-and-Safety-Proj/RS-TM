@@ -2,29 +2,15 @@ package com.example.rstm
 
 
 import AccelerometerScreen
+import BLEScreen
 import GyroscopeScreen
 import ImplementRepository
 import ImplementScreen
 import LightScreenComp
 import android.Manifest
-import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCallback
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothProfile
-import android.bluetooth.BluetoothServerSocket
-import android.bluetooth.BluetoothSocket
-import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanResult
-import android.content.BroadcastReceiver
-import android.content.ContentValues.TAG
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.SensorManager
 import android.net.Uri
@@ -39,11 +25,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.ActivityCompat
@@ -64,15 +52,16 @@ import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.example.rstm.roomImplementation.AppDatabase
-import java.io.IOException
+import com.example.rstm.viewModels.BLEViewModel
 import java.sql.Timestamp
-import java.util.UUID
 
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var sensorManager: SensorManager
+    private lateinit var bleManager: BLEManager
+
 
     companion object{
         lateinit var appDatabase: AppDatabase
@@ -161,9 +150,30 @@ class MainActivity : ComponentActivity() {
         sensorData.locationData = location
     }
 
+    private val bleViewModel: BLEViewModel by viewModels()
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize BLEManager
+        bleManager = BLEManager(this)
+        // Check and request permissions
+        checkPermission()
+
+        bleManager = BLEManager(this)
+
+        // Start scanning for BLE devices
+        bleManager.startScanning { device ->
+            // Replace with a specific device name/address check if needed
+            if (device.name == "ESP32_BLE_Sensor") {
+                Log.d("BLE", "Connecting to ${device.name}")
+                bleManager.connectToDevice(device) { data ->
+                    // Handle received data here
+                    Log.d("BLE", "Received from ESP: $data")
+                }
+            }
+        }
 
         appDatabase = Room.databaseBuilder(applicationContext, AppDatabase::class.java, AppDatabase.NAME).build()
 
@@ -178,6 +188,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
+
         setContent {
             val navController = rememberNavController()
             RSTMTheme {
@@ -185,6 +196,12 @@ class MainActivity : ComponentActivity() {
                     NavHost(navController = navController, startDestination = "home") {
                         composable("home") {
                             HomeScreen(Modifier.padding(innerPadding), navController)
+                        }
+                        composable("BLE") {
+                            BLEScreen(
+                                receivedData = bleViewModel.receivedData.collectAsState().value,
+                                startScan = { bleManager.startScanning(it) }
+                            )
                         }
                         composable("accelerometer") {
                             AccelerometerScreen(Modifier.padding(innerPadding), sensorManager, ::changeAccData)
