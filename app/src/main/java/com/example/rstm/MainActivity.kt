@@ -116,97 +116,6 @@ class MainActivity : ComponentActivity() {
             checkExternalStoragePermission()
         }
     }
-    private var bluetoothAdapter: BluetoothAdapter? = null
-
-    @SuppressLint("MissingPermission")
-    private fun manageMyConnectedSocket(socket: BluetoothSocket) {
-        // Obtain input and output streams for communication
-        val inputStream = socket.inputStream
-        val outputStream = socket.outputStream
-
-        // Example: Reading and writing data
-        val buffer = ByteArray(1024) // Buffer for storing incoming data
-        var bytes: Int
-        
-        // Read data in a background thread to avoid blocking the main thread
-        Thread {
-            try {
-                // Keep reading data until an exception occurs
-                while (true) {
-                    bytes = inputStream.read(buffer)
-                    val incomingMessage = String(buffer, 0, bytes)
-                    Log.d("Bluetooth", "Received message: $incomingMessage")
-
-                    // Optionally, you can write a response
-                    val responseMessage = "Message received"
-                    outputStream.write(responseMessage.toByteArray())
-                }
-            } catch (e: IOException) {
-                Log.e(TAG, "Error managing connected socket", e)
-                try {
-                    socket.close()
-                } catch (closeException: IOException) {
-                    Log.e(TAG, "Could not close connected socket", closeException)
-                }
-            }
-        }.start()
-    }
-
-    @SuppressLint("MissingPermission")
-    private inner class AcceptThread : Thread() {
-        val NAME = "BluetoothChatService"
-        val MY_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66")
-
-        private val mmServerSocket: BluetoothServerSocket? by lazy(LazyThreadSafetyMode.NONE) {
-            bluetoothAdapter?.listenUsingInsecureRfcommWithServiceRecord(NAME, MY_UUID)
-        }
-
-        override fun run() {
-            // Keep listening until exception occurs or a socket is returned.
-            var shouldLoop = true
-            while (shouldLoop) {
-                val socket: BluetoothSocket? = try {
-                    mmServerSocket?.accept()
-                } catch (e: IOException) {
-                    Log.e(TAG, "Socket's accept() method failed", e)
-                    shouldLoop = false
-                    null
-                }
-                socket?.also {
-                    manageMyConnectedSocket(it)
-                    mmServerSocket?.close()
-                    shouldLoop = false
-                }
-            }
-        }
-
-        // Closes the connect socket and causes the thread to finish.
-        fun cancel() {
-            try {
-                mmServerSocket?.close()
-            } catch (e: IOException) {
-                Log.e(TAG, "Could not close the connect socket", e)
-            }
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun checkBluetooth() {
-        val bluetoothManager: BluetoothManager = getSystemService(BluetoothManager::class.java)!!
-        bluetoothAdapter = bluetoothManager.adapter
-        if (bluetoothAdapter == null) {
-            // Device doesn't support Bluetooth
-        } else if (bluetoothAdapter!!.isEnabled == false) {
-            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            val REQUEST_ENABLE_BT = 1
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
-        }
-        val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
-        pairedDevices?.forEach { device ->
-            val deviceName = device.name
-            val deviceHardwareAddress = device.address // MAC address
-        }
-    }
     // Request external storage permission
     private fun checkExternalStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -252,31 +161,9 @@ class MainActivity : ComponentActivity() {
         sensorData.locationData = location
     }
 
-    private val receiver = object : BroadcastReceiver() {
-
-        @SuppressLint("MissingPermission")
-        override fun onReceive(context: Context, intent: Intent) {
-            val action: String = intent.action.toString()
-            when(action) {
-                BluetoothDevice.ACTION_FOUND -> {
-                    // Discovery has found a device. Get the BluetoothDevice
-                    // object and its info from the Intent.
-                    val device: BluetoothDevice =
-                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)!!
-                    val deviceName = device.name
-                    val deviceHardwareAddress = device.address
-                }
-            }
-        }
-    }
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        checkBluetooth()
-
-        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
-        registerReceiver(receiver, filter)
 
         appDatabase = Room.databaseBuilder(applicationContext, AppDatabase::class.java, AppDatabase.NAME).build()
 
@@ -330,11 +217,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-    override fun onDestroy() {
-        super.onDestroy()
-        // Don't forget to unregister the ACTION_FOUND receiver.
-        unregisterReceiver(receiver)
     }
 }
 
