@@ -112,6 +112,12 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController) {
             ) {
                 Text(text = "Implement Screen")
             }
+            Button(
+                onClick = { navController.navigate("BLE") },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text(text = "Bluetooth Screen")
+            }
         }
     }
 }
