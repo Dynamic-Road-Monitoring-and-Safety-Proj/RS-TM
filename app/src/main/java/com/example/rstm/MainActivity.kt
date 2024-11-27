@@ -52,7 +52,6 @@ import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.example.rstm.roomImplementation.AppDatabase
-import com.example.rstm.viewModels.BLEViewModel
 import java.sql.Timestamp
 
 
@@ -150,8 +149,6 @@ class MainActivity : ComponentActivity() {
         sensorData.locationData = location
     }
 
-    private val bleViewModel: BLEViewModel by viewModels()
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -199,8 +196,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("BLE") {
                             BLEScreen(
-                                receivedData = bleViewModel.receivedData.collectAsState().value,
-                                startScan = { bleManager.startScanning(it) }
+
                             )
                         }
                         composable("accelerometer") {
