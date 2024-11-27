@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
-
 @Composable
 fun BLEScreen(
     receivedData: String,
