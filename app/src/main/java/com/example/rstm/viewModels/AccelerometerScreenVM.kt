@@ -37,7 +37,7 @@ class AccelerometerScreenVM : ViewModel() {
     }
     fun startAccelerometer(sensorManager: SensorManager) {
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        sensorManager.registerListener(accEventListener, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager.registerListener(accEventListener, accelerometer, SensorManager.SENSOR_DELAY_UI)
     }
     fun stopAccelerometer(sensorManager: SensorManager){
         sensorManager.unregisterListener(accEventListener)

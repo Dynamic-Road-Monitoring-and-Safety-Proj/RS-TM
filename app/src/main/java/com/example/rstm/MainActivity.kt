@@ -196,7 +196,6 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("BLE") {
                             BLEScreen(
-
                             )
                         }
                         composable("accelerometer") {
