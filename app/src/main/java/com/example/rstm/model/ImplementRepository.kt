@@ -33,6 +33,7 @@ class ImplementRepository() {
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
     // Helper function to log the current _uriList state
+
     private fun printUriList() {
         Log.d("ImplementRepository", "Current URI List: ${_uriList.value ?: emptyList<Uri>()}")
     }
@@ -99,7 +100,7 @@ class ImplementRepository() {
         try {
             // Create the CSV string
             val csvBuilder = StringBuilder()
-            csvBuilder.append("Timestamp,AccelerometerX,AccelerometerY,AccelerometerZ,MagneticX,MagneticY,MagneticZ,GyroscopeX,GyroscopeY,GyroscopeZ,Light,LocationLatitude,LocationLongitude\n") // Add header
+            csvBuilder.append("Timestamp,AccelerometerX,AccelerometerY,AccelerometerZ,GyroscopeX,GyroscopeY,GyroscopeZ,Light,LocationLatitude,LocationLongitude,Altitude,Speed\n") // Add header
 
             sensorDataList.forEach { sensorData ->
 
@@ -113,8 +114,8 @@ class ImplementRepository() {
                             "${sensorData.gyroscopeData.third}," +
                             "${sensorData.lightData}," +
                             "${sensorData.locationData.latitude}," +
-                            "${sensorData.locationData.longitude}\n"+
-                            "${sensorData.locationData.altitude}\n"+
+                            "${sensorData.locationData.longitude},"+
+                            "${sensorData.locationData.altitude},"+
                             "${sensorData.locationData.speed}\n"
                 )
             }
