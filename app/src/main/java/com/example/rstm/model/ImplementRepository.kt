@@ -22,18 +22,6 @@ class ImplementRepository() {
 
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-    val sensorDataList : MutableList<SensorData> = mutableListOf()
-
-    fun listMaker(sensorData: SensorData) {
-        scope.launch(Dispatchers.IO) {
-            val newSensorData = sensorData.copy(
-                timestamp = Timestamp(System.currentTimeMillis())
-            )
-            sensorDataList.add(newSensorData)
-        }
-    }
-
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
     // Helper function to log the current _uriList state
