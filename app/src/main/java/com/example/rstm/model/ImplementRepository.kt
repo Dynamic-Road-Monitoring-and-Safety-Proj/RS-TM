@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
+import java.sql.Timestamp
 
 class ImplementRepository() {
 
@@ -24,9 +25,12 @@ class ImplementRepository() {
     private val scope = CoroutineScope(Dispatchers.IO)
     val sensorDataList : MutableList<SensorData> = mutableListOf()
 
-    fun listMaker(sensorData: SensorData){
+    fun listMaker(sensorData: SensorData) {
         scope.launch(Dispatchers.IO) {
-            sensorDataList.add(sensorData)
+            val newSensorData = sensorData.copy(
+                timestamp = Timestamp(System.currentTimeMillis())
+            )
+            sensorDataList.add(newSensorData)
         }
     }
 
