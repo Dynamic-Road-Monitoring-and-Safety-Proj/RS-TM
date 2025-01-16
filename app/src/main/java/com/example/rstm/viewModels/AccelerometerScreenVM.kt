@@ -18,7 +18,6 @@ class AccelerometerScreenVM : ViewModel() {
     var z = mutableStateOf(0f)
 
 
-
     private val accEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             if (event != null) {
