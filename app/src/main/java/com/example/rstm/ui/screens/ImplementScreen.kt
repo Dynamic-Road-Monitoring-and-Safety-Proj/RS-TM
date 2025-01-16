@@ -98,7 +98,7 @@ fun ImplementScreen(
     LaunchedEffect(Unit) {
         while (true) {
             delay(500)
-            viewModel.getRepository().listMaker(sensorData)
+            viewModel.getRepository().appendSensorDataToCSV(context, sensorData)
         }
     }
     LaunchedEffect(Unit) {
@@ -200,7 +200,6 @@ fun ImplementScreen(
                             val result = viewModel.captureVideo(videoCapture, context)
                             captureListener = result.second
                             recording = result.first
-                            viewModel.getRepository().saveSensorDataAsCSV(context)
                             viewModel.getRepository().saveUriListAsCSV(context)
                             viewModel.getRepository().saveToDatabase(context)
                             // Start a new buffered recording

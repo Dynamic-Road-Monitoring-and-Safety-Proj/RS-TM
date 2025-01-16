@@ -96,53 +96,77 @@ class ImplementRepository() {
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
 
-
-    fun saveSensorDataAsCSV(context: Context) {
+    fun appendSensorDataToCSV(context: Context, data: SensorData) {
         val csvFileName = "sensor_data.csv"
         val filePath = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), csvFileName)
+        val maxFileSize = 100 * 1024 * 1024 // 100 MB in bytes
+        val maxReadings = 40000
 
         try {
-            // Create the CSV string
-            val csvBuilder = StringBuilder()
-            csvBuilder.append("Timestamp,AccelerometerX,AccelerometerY,AccelerometerZ,GyroscopeX,GyroscopeY,GyroscopeZ,Light,LocationLatitude,LocationLongitude,Altitude,Speed\n") // Add header
-
-            sensorDataList.forEach { sensorData ->
-
-                csvBuilder.append(
-                            "${sensorData.timestamp}," +
-                            "${sensorData.accelerometerData.first}," +
-                            "${sensorData.accelerometerData.second}," +
-                            "${sensorData.accelerometerData.third}," +
-                            "${sensorData.gyroscopeData.first}," +
-                            "${sensorData.gyroscopeData.second}," +
-                            "${sensorData.gyroscopeData.third}," +
-                            "${sensorData.lightData}," +
-                            "${sensorData.locationData.latitude}," +
-                            "${sensorData.locationData.longitude},"+
-                            "${sensorData.locationData.altitude},"+
-                            "${sensorData.locationData.speed}\n"
+            // Create the file if it doesn't exist and add the header
+            if (!filePath.exists()) {
+                filePath.writeText(
+                    "Timestamp,AccelerometerX,AccelerometerY,AccelerometerZ,GyroscopeX,GyroscopeY,GyroscopeZ,Light,LocationLatitude,LocationLongitude,Altitude,Speed\n"
                 )
             }
 
-            // Write the CSV string to the file
-            FileOutputStream(filePath).use { fos ->
-                OutputStreamWriter(fos).use { writer ->
-                    writer.write(csvBuilder.toString())
-                }
+            // Append the new data
+            val sensorData = data.copy(
+                timestamp = Timestamp(System.currentTimeMillis())
+            )
+            val csvLine = "${sensorData.timestamp}," +
+                    "${sensorData.accelerometerData.first}," +
+                    "${sensorData.accelerometerData.second}," +
+                    "${sensorData.accelerometerData.third}," +
+                    "${sensorData.gyroscopeData.first}," +
+                    "${sensorData.gyroscopeData.second}," +
+                    "${sensorData.gyroscopeData.third}," +
+                    "${sensorData.lightData}," +
+                    "${sensorData.locationData.latitude}," +
+                    "${sensorData.locationData.longitude}," +
+                    "${sensorData.locationData.altitude}," +
+                    "${sensorData.locationData.speed}\n"
+
+            filePath.appendText(csvLine)
+
+            // Check file size and number of readings
+            if (filePath.length() > maxFileSize || countReadings(filePath) > maxReadings) {
+                trimCSVFile(filePath)
             }
-
-            // Get the URI of the saved file
-            val savedUri = Uri.fromFile(filePath)
-            Log.d("SaveSensorDataAsCSV", "CSV saved at: $savedUri")
-
-            // Update your LiveData with the new URI
-            state.value?.csvUri = savedUri // Update the csvUri property
-            state.postValue(state.value) // Update LiveData with the new state
-
         } catch (e: Exception) {
-            Log.e("SaveSensorDataAsCSV", "Error saving CSV: ${e.message}", e)
+            Log.e("AppendSensorDataToCSV", "Error appending data: ${e.message}", e)
         }
     }
+
+    // Function to count the number of readings in the CSV file (excluding the header)
+    fun countReadings(file: File): Int {
+        return try {
+            file.readLines().size - 1 // Subtract 1 for the header
+        } catch (e: Exception) {
+            Log.e("CountReadings", "Error counting readings: ${e.message}", e)
+            0
+        }
+    }
+
+    // Function to trim the first 50% of data from the CSV file
+    fun trimCSVFile(file: File) {
+        try {
+            val lines = file.readLines()
+            val header = lines.first()
+            val data = lines.drop(1) // Exclude the header
+            val trimmedData = data.drop(data.size / 2) // Drop the first 50% of rows
+
+            // Rewrite the file with the header and trimmed data
+            file.writeText("$header\n")
+            file.appendText(trimmedData.joinToString("\n") + "\n")
+
+            Log.d("TrimCSVFile", "Trimmed CSV file to 50% of its original size")
+        } catch (e: Exception) {
+            Log.e("TrimCSVFile", "Error trimming CSV file: ${e.message}", e)
+        }
+    }
+
+
     fun saveUriListAsCSV(context: Context) {
         val csvFileName = "video_uri.csv"
         val filePath = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), csvFileName)
