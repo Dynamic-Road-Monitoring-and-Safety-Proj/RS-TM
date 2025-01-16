@@ -20,7 +20,6 @@ import androidx.camera.video.VideoRecordEvent
 import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -38,11 +37,6 @@ class ImplementVM(
 ) : ViewModel() {
     // State management
     private val _lensFacing = MutableLiveData(CameraSelector.LENS_FACING_BACK)
-    val lensFacing = _lensFacing
-    private val _recordingState = MutableLiveData<RecordingState>()
-    val recordingState: LiveData<RecordingState> = _recordingState
-
-    private var currentRecording: Recording? = null
 
     // Toggle between front and back camera
     fun toggleLensFacing() {
@@ -214,9 +208,4 @@ class ImplementVM(
     fun getRepository() :ImplementRepository{
         return implementRepo
     }
-}
-
-sealed class RecordingState {
-    object Stopped : RecordingState()
-    data class Started(val recording: Recording?) : RecordingState()
 }
