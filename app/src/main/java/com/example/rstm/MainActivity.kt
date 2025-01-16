@@ -8,8 +8,6 @@ import ImplementRepository
 import ImplementScreen
 import LightScreenComp
 import android.Manifest
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.SensorManager
@@ -31,7 +29,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.ActivityCompat
@@ -132,21 +129,29 @@ class MainActivity : ComponentActivity() {
     // Initialize sensor Data class
     val sensorData = SensorData()
 
-    fun changeGyroData(x: Float, y: Float, z: Float) { //also time
+    fun changeGyroData(x: Float, y: Float, z: Float) {
         sensorData.gyroscopeData = Triple(x, y, z)
         sensorData.timestamp = Timestamp(System.currentTimeMillis())
     }
+
     fun changeAccData(x: Float, y: Float, z: Float) {
         sensorData.accelerometerData = Triple(x, y, z)
+        sensorData.timestamp = Timestamp(System.currentTimeMillis())
     }
-    fun changeMagData(x: Float, y: Float, z: Float) {
-        sensorData.magneticData = Triple(x, y, z)
-    }
+
     fun changeLightData(light: Float) {
         sensorData.lightData = light
+        sensorData.timestamp = Timestamp(System.currentTimeMillis())
     }
+
+    fun changeMagData(x: Float, y: Float, z: Float) {
+        sensorData.magneticData = Triple(x, y, z)
+        sensorData.timestamp = Timestamp(System.currentTimeMillis())
+    }
+
     fun changeLocationData(location: android.location.Location) {
         sensorData.locationData = location
+        sensorData.timestamp = Timestamp(System.currentTimeMillis())
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -195,8 +200,7 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(Modifier.padding(innerPadding), navController)
                         }
                         composable("BLE") {
-                            BLEScreen(
-                            )
+                            BLEScreen()
                         }
                         composable("accelerometer") {
                             AccelerometerScreen(Modifier.padding(innerPadding), sensorManager, ::changeAccData)
