@@ -96,7 +96,7 @@ class ImplementRepository() {
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
 
-    fun appendSensorDataToCSV(context: Context, sensorData: SensorData) {
+    fun appendSensorDataToCSV(context: Context, data: SensorData) {
         val csvFileName = "sensor_data.csv"
         val filePath = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), csvFileName)
         val maxFileSize = 100 * 1024 * 1024 // 100 MB in bytes
@@ -111,6 +111,9 @@ class ImplementRepository() {
             }
 
             // Append the new data
+            val sensorData = data.copy(
+                timestamp = Timestamp(System.currentTimeMillis())
+            )
             val csvLine = "${sensorData.timestamp}," +
                     "${sensorData.accelerometerData.first}," +
                     "${sensorData.accelerometerData.second}," +
