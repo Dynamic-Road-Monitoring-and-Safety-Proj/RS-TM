@@ -3,6 +3,7 @@ package com.example.rstm.yolo
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
+import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
@@ -37,35 +38,42 @@ class Detector(
         .build()
 
     fun setup() {
-        // Change this line - use only the filename instead of full path
-        val model = FileUtil.loadMappedFile(context, modelPath)  // Just the filename
-
-        val options = Interpreter.Options()
-        options.numThreads = 4
-        interpreter = Interpreter(model, options)
-
-        val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
-        val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
-
-        tensorWidth = inputShape[1]
-        tensorHeight = inputShape[2]
-        numChannel = outputShape[1]
-        numElements = outputShape[2]
-
         try {
-            val inputStream: InputStream = context.assets.open(labelPath)
-            val reader = BufferedReader(InputStreamReader(inputStream))
+            // Load model from assets folder
+            val model = FileUtil.loadMappedFile(context, "model.tflite")
 
-            var line: String? = reader.readLine()
-            while (line != null && line != "") {
-                labels.add(line)
-                line = reader.readLine()
+            val options = Interpreter.Options()
+            options.numThreads = 4
+            interpreter = Interpreter(model, options)
+
+            val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
+            val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
+
+            tensorWidth = inputShape[1]
+            tensorHeight = inputShape[2]
+            numChannel = outputShape[1]
+            numElements = outputShape[2]
+
+            try {
+                val inputStream: InputStream = context.assets.open(labelPath)
+                val reader = BufferedReader(InputStreamReader(inputStream))
+
+                var line: String? = reader.readLine()
+                while (line != null && line != "") {
+                    labels.add(line)
+                    line = reader.readLine()
+                }
+
+                reader.close()
+                inputStream.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
 
-            reader.close()
-            inputStream.close()
-        } catch (e: IOException) {
+        } catch (e: Exception) {
+            Log.e("Detector", "Error setting up detector")
             e.printStackTrace()
+            // You might want to handle this error appropriately
         }
     }
 
