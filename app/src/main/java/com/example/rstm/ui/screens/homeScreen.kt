@@ -94,12 +94,12 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController) {
             ) {
                 Text(text = "Camera Screen")
             }
-            Button(
-                onClick = { navController.navigate("Detection & Collection Activated") },
-                modifier = Modifier.padding(8.dp)
-            ) {
-                Text(text = "Active Screen")
-            }
+//            Button(
+//                onClick = { navController.navigate("Detection & Collection Activated") },
+//                modifier = Modifier.padding(8.dp)
+//            ) {
+//                Text(text = "Active Screen")
+//            }
             Button(
                 onClick = { navController.navigate("Hidden View") },
                 modifier = Modifier.padding(8.dp)
@@ -117,6 +117,12 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController) {
                 modifier = Modifier.padding(8.dp)
             ) {
                 Text(text = "Bluetooth Screen")
+            }
+            Button(
+                onClick = { navController.navigate("yoloFragment") },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text(text = "yolo Screen")
             }
         }
     }

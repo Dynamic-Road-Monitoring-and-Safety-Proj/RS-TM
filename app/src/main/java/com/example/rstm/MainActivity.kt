@@ -49,6 +49,7 @@ import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.example.rstm.roomImplementation.AppDatabase
+import com.example.rstm.ui.screens.YoloFragmentScreen
 import java.sql.Timestamp
 
 
@@ -196,6 +197,9 @@ class MainActivity : ComponentActivity() {
             RSTMTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavHost(navController = navController, startDestination = "home") {
+                        composable("yoloFragment") {
+                            YoloFragmentScreen()
+                        }
                         composable("home") {
                             HomeScreen(Modifier.padding(innerPadding), navController)
                         }
