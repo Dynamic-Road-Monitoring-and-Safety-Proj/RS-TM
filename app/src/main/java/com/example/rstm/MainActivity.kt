@@ -27,18 +27,23 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
+import com.example.rstm.Constants.LABELS_PATH
+import com.example.rstm.Constants.MODEL_PATH
 import com.example.rstm.model.SensorData
 import com.example.rstm.ui.screens.Activated
 import com.example.rstm.ui.screens.CameraPreviewScreen
@@ -51,11 +56,12 @@ import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.example.rstm.roomImplementation.AppDatabase
+import com.example.rstm.ui.screens.YoloDetectionRoute
 import com.example.rstm.ui.screens.YoloFragmentScreen
 import java.sql.Timestamp
 
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var sensorManager: SensorManager
@@ -210,8 +216,16 @@ class MainActivity : ComponentActivity() {
             RSTMTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavHost(navController = navController, startDestination = "home") {
-                        composable("yoloFragment") {
-                            YoloFragmentScreen()
+                        composable("yolo") {
+                            // Replace `YoloFragmentScreen` with `YoloDetectionRoute`
+                            YoloDetectionRoute(
+                                modelPath = MODEL_PATH, // Replace with your actual model path
+                                labelsPath = LABELS_PATH, // Replace with your actual labels path
+                                onPermissionDenied = {
+                                    // Handle permission denial
+                                    navController.navigate("home") // Navigate back to the home screen or show a message
+                                }
+                            )
                         }
                         composable("home") {
                             HomeScreen(Modifier.padding(innerPadding), navController)

@@ -37,7 +37,9 @@ class Detector(
         .build()
 
     fun setup() {
-        val model = FileUtil.loadMappedFile(context, modelPath)
+        // Change this line - use only the filename instead of full path
+        val model = FileUtil.loadMappedFile(context, "model.tflite")  // Just the filename
+
         val options = Interpreter.Options()
         options.numThreads = 4
         interpreter = Interpreter(model, options)

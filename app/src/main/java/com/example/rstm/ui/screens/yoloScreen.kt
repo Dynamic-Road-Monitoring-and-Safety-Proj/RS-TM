@@ -13,15 +13,25 @@ import com.example.rstm.yolo.yoloFragment
 fun YoloFragmentScreen() {
     AndroidView(
         factory = { context ->
-            // Safely cast context to FragmentActivity
             val fragmentActivity = context as? FragmentActivity
                 ?: throw IllegalStateException("Context is not a FragmentActivity.")
-            val fragment = yoloFragment()
-            FragmentContainerView(context).apply {
+
+            FragmentContainerView(fragmentActivity).apply {
                 id = View.generateViewId()
+                val fragment = yoloFragment()
                 fragmentActivity.supportFragmentManager.beginTransaction()
                     .add(id, fragment)
-                    .commitNow() // Commit immediately
+                    .commitNow()
+
+                // Add cleanup on dispose
+                addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                    override fun onViewAttachedToWindow(v: View) {}
+                    override fun onViewDetachedFromWindow(v: View) {
+                        fragmentActivity.supportFragmentManager.beginTransaction()
+                            .remove(fragment)
+                            .commitNow()
+                    }
+                })
             }
         },
         modifier = Modifier.fillMaxSize()

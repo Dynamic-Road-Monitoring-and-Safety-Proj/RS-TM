@@ -119,7 +119,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController) {
                 Text(text = "Bluetooth Screen")
             }
             Button(
-                onClick = { navController.navigate("yoloFragment") },
+                onClick = { navController.navigate("yolo") },
                 modifier = Modifier.padding(8.dp)
             ) {
                 Text(text = "yolo Screen")
