@@ -8,6 +8,8 @@ import ImplementRepository
 import ImplementScreen
 import LightScreenComp
 import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.SensorManager
@@ -159,21 +161,32 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize BLEManager
-        bleManager = BLEManager(this)
         // Check and request permissions
         checkPermission()
 
         bleManager = BLEManager(this)
+        fun isBluetoothEnabled(context: Context): Boolean {  // when user have ble disabled, app won't crash now
+            val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
 
+            // Check if Bluetooth is supported on the device
+            if (bluetoothAdapter == null) {
+                Toast.makeText(context, "Bluetooth not supported on this device", Toast.LENGTH_SHORT).show()
+                return false
+            }
+
+            // Check if Bluetooth is enabled
+            return bluetoothAdapter.isEnabled
+        }
         // Start scanning for BLE devices
-        bleManager.startScanning { device ->
-            // Replace with a specific device name/address check if needed
-            if (device.name == "ESP32_BLE_Sensor") {
-                Log.d("BLE", "Connecting to ${device.name}")
-                bleManager.connectToDevice(device) { data ->
-                    // Handle received data here
-                    Log.d("BLE", "Received from ESP: $data")
+        if( isBluetoothEnabled(this) ) {
+            bleManager.startScanning { device ->
+                // Replace with a specific device name/address check if needed
+                if (device.name == "ESP32_BLE_Sensor") {
+                    Log.d("BLE", "Connecting to ${device.name}")
+                    bleManager.connectToDevice(device) { data ->
+                        // Handle received data here
+                        Log.d("BLE", "Received from ESP: $data")
+                    }
                 }
             }
         }

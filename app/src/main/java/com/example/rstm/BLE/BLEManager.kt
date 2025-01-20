@@ -11,6 +11,11 @@ import java.util.*
 class BLEManager(private val context: Context) {
     private val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
     private val scanner = bluetoothAdapter.bluetoothLeScanner
+    init {
+        if (bluetoothAdapter == null) {
+            Log.e("BLEManager", "Device does not support Bluetooth")
+        }
+    }
     private var bluetoothGatt: BluetoothGatt? = null
     private var onDataReceived: ((String) -> Unit)? = null
 
