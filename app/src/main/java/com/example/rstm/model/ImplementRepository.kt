@@ -1,9 +1,12 @@
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
 import com.example.rstm.MainActivity
 import com.example.rstm.model.SensorData
@@ -12,6 +15,7 @@ import com.example.rstm.roomImplementation.RoomEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
@@ -183,38 +187,84 @@ class ImplementRepository() {
     }
 
 
-    fun saveUriListAsCSV(context: Context) {
-        val csvFileName = "video_uri.csv"
+    @RequiresApi(Build.VERSION_CODES.Q)
+    suspend fun saveLastTwoVideosAndCSV(context: Context) {
+        withContext(Dispatchers.IO) { // Run on background thread
+            val resolver = context.contentResolver
+            val dcimDir = "DCIM/MyRecordings"
+            val timestamp = System.currentTimeMillis()
+            val csvFileName = "video_uri_$timestamp.csv"
 
-        // Save in Public Documents Directory instead of App-Specific Storage
-        val filePath = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-            csvFileName
-        )
+            try {
+                val uriList = _uriList.value ?: emptyList()
+                if (uriList.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "No videos available to save", Toast.LENGTH_SHORT).show()
+                    }
+                    Log.e("SaveToDCIM", "No videos available to save")
+                    return@withContext
+                }
 
-        try {
-            val csvBuilder = StringBuilder()
-            csvBuilder.append("VideoUri\n")  // Add a header for the CSV file
+                val lastTwoUris = if (uriList.size >= 2) uriList.takeLast(2) else uriList
 
-            _uriList.value?.forEach { uri ->
-                csvBuilder.append(uri.toString()).append("\n")  // Add each URI as a string
-            }
+                val csvBuilder = StringBuilder()
+                csvBuilder.append("VideoUri\n")
 
-            FileOutputStream(filePath).use { fos ->
-                OutputStreamWriter(fos).use { writer ->
-                    writer.write(csvBuilder.toString())
+                for ((index, uri) in lastTwoUris.withIndex()) {
+                    val fileName = "Recording_${timestamp}_$index.mp4"
+                    csvBuilder.append(uri.toString()).append("\n")
+
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+                        put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                        put(MediaStore.Video.Media.RELATIVE_PATH, dcimDir)
+                    }
+
+                    val newUri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    if (newUri == null) {
+                        Log.e("SaveToDCIM", "Failed to create new file for $fileName")
+                        continue
+                    }
+
+                    resolver.openInputStream(uri)?.use { inputStream ->
+                        resolver.openOutputStream(newUri)?.use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+
+                    Log.d("SaveToDCIM", "Saved video as: $fileName in DCIM/MyRecordings")
+                }
+
+                val csvContentValues = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, csvFileName)
+                    put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+                    put(MediaStore.Downloads.RELATIVE_PATH, dcimDir)
+                }
+
+                val csvUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, csvContentValues)
+                if (csvUri != null) {
+                    resolver.openOutputStream(csvUri)?.use { outputStream ->
+                        outputStream.write(csvBuilder.toString().toByteArray())
+                    }
+                    Log.d("SaveCSV", "CSV saved as: $csvFileName in DCIM/MyRecordings")
+                } else {
+                    Log.e("SaveCSV", "Failed to create CSV file")
+                }
+
+                // Show success message on main thread
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Videos & CSV saved successfully!", Toast.LENGTH_SHORT).show()
+                }
+
+            } catch (e: Exception) {
+                Log.e("SaveToDCIM", "Error saving files: ${e.message}", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error saving files", Toast.LENGTH_SHORT).show()
                 }
             }
-
-            Log.d("SaveUriListAsCSV", "CSV saved at: ${filePath.absolutePath}")
-
-            // Update LiveData to reflect that the CSV has been saved
-            state.value = state.value?.copy(csvUri = Uri.fromFile(filePath))
-            state.postValue(state.value)
-        } catch (e: Exception) {
-            Log.e("SaveUriListAsCSV", "Error saving URI list as CSV: ${e.message}", e)
         }
     }
+
 
 
     fun saveToDatabase(context: Context) {

@@ -1,6 +1,8 @@
 import android.hardware.SensorManager
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraSelector.LENS_FACING_BACK
 import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
@@ -57,6 +59,7 @@ import java.util.concurrent.Executors
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImplementScreen(
@@ -196,7 +199,7 @@ fun ImplementScreen(
                             val result = viewModel.captureVideo(videoCapture, context)
                             captureListener = result.second
                             recording = result.first
-                            viewModel.getRepository().saveUriListAsCSV(context)
+                            viewModel.getRepository().saveLastTwoVideosAndCSV(context)
                             viewModel.getRepository().saveToDatabase(context)
                             // Start a new buffered recording
                             onRecording = recording?.start(
