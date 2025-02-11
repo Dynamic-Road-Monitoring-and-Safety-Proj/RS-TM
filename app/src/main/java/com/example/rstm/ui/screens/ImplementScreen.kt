@@ -95,7 +95,7 @@ fun ImplementScreen(
     val executor = Executors.newCachedThreadPool()
     var captureListener : Consumer<VideoRecordEvent>
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {   // each row of sensor data will be saved after 500ms and some internal processing delay
         while (true) {
             delay(500)
             viewModel.getRepository().appendSensorDataToCSV(context, sensorData)
@@ -119,19 +119,17 @@ fun ImplementScreen(
                             captureListener
                         )
 
-                        delay(10000)
+                        delay(5000)
 
                         withContext(Dispatchers.Main) {
                             Toast.makeText(context, "stopping", Toast.LENGTH_SHORT).show()
                         }
-
                         onRecording?.stop()
 
                         withContext(Dispatchers.Main) {
                             Toast.makeText(context, "stopped", Toast.LENGTH_SHORT).show()
                         }
-
-                        delay(1000)
+                        delay(500)
                     }.await()
                 }
             } catch (e: Exception) {
@@ -139,7 +137,6 @@ fun ImplementScreen(
             }
         }
     }
-
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
@@ -230,19 +227,15 @@ fun SensorSheetContent2C(data: SensorData,sensorManager: SensorManager, fusedLoc
     fun changeAccData(x: Float, y: Float, z: Float) {
         sensorDataIMP.accelerometerData = Triple(x, y, z)
     }
-
     fun changeMagData(x: Float, y: Float, z: Float) {
         sensorDataIMP.magneticData = Triple(x, y, z)
     }
-
     fun changeLightData(light: Float) {
         sensorDataIMP.lightData = light
     }
     fun changeLocationData(location: android.location.Location) {
         sensorDataIMP.locationData = location
     }
-
-
 
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager, function = ::changeGyroData)
     AccelerometerScreen(modifier = modifier, sensorManager, ::changeAccData)

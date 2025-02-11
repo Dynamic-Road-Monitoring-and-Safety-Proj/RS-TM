@@ -72,7 +72,7 @@ class ImplementRepository() {
     fun initializeUriList(context: Context) {
         val initialList = mutableListOf<Uri>()
 
-        for (i in 0..5) {
+        for (i in 0..1) {
             val fileName = "$i.mp4"
             val fileUri = findVideoUriByName(context, fileName)
             if (fileUri != null) {
@@ -91,8 +91,10 @@ class ImplementRepository() {
         val maxReadings = 40000
 
         try {
+            val isNewFile = !filePath.exists()
+
             // Create the file if it doesn't exist and add the header
-            if (!filePath.exists()) {
+            if (isNewFile) {
                 filePath.writeText(
                     "Timestamp,AccelerometerX,AccelerometerY,AccelerometerZ,GyroscopeX,GyroscopeY,GyroscopeZ,Light,LocationLatitude,LocationLongitude,Altitude,Speed\n"
                 )
@@ -115,7 +117,12 @@ class ImplementRepository() {
                     "${sensorData.locationData.altitude}," +
                     "${sensorData.locationData.speed}\n"
 
-            filePath.appendText(csvLine)
+            // Use append mode
+            FileOutputStream(filePath, true).use { fos ->
+                OutputStreamWriter(fos).use { writer ->
+                    writer.write(csvLine)
+                }
+            }
 
             // Check file size and number of readings
             if (filePath.length() > maxFileSize || countReadings(filePath) > maxReadings) {
@@ -125,6 +132,7 @@ class ImplementRepository() {
             Log.e("AppendSensorDataToCSV", "Error appending data: ${e.message}", e)
         }
     }
+
 
     // Function to count the number of readings in the CSV file (excluding the header)
     fun countReadings(file: File): Int {

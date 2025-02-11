@@ -118,34 +118,33 @@ class ImplementVM(
             }
         }
     }
+
     @SuppressLint("MissingPermission")
     fun captureVideo(
         videoCapture: VideoCapture<Recorder>,
         context: Context
     ): Pair<PendingRecording, androidx.core.util.Consumer<VideoRecordEvent>> {
 
-        var name: String = "0.mp4"
+        var name = "0.mp4"
 
-        val uriList : MutableList<Uri>? = implementRepo.getUriList()
+        val uriList: MutableList<Uri>? = implementRepo.getUriList()
 
         uriList?.size?.let {
-            if (it >= 6) {
-                // Circular buffer: when there are 6 videos, delete the oldest and rename the others
-                val isDeleted = deleteOldestVideo(context, uriList )
-                if(isDeleted == 1){
-                    renameVideos(context, uriList)  // Renames from 0.mp4 to 4.mp4
+            if (it >= 2) {  // Keep only 2 videos
+                val isDeleted = deleteOldestVideo(context, uriList)
+                if (isDeleted == 1) {
+                    renameVideos(context, uriList) // Rename 0.mp4 to 1.mp4
                     implementRepo.updateUriList(uriList)
                 }
-                name = "5.mp4"  // New video will be named "5.mp4"
+                name = "1.mp4"  // New video will be named "1.mp4"
             } else {
-                // If the list size is less than 6, name videos sequentially from "0.mp4" to "4.mp4"
                 name = "${uriList.size}.mp4"
             }
         }
 
         val existingUri = findVideoUriByName(context, name)
         if (existingUri != null) {
-            context.contentResolver.delete(existingUri, null, null)  // Delete existing file
+            context.contentResolver.delete(existingUri, null, null)
             Log.d("CameraScreen", "Deleted existing video: $name")
         }
 
@@ -167,27 +166,18 @@ class ImplementVM(
                 }
                 is VideoRecordEvent.Finalize -> {
                     if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
-                        Log.d(
-                            "CameraScreen",
-                            "Video recording succeeded: ${event.outputResults.outputUri}"
-                        )
+                        Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
 
                         CoroutineScope(Dispatchers.Main).launch {
-                            Toast.makeText(
-                                context,
-                                "URI is ${event.outputResults.outputUri}",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            Toast.makeText(context, "URI is ${event.outputResults.outputUri}", Toast.LENGTH_LONG).show()
                         }
 
                         val videoUri = event.outputResults.outputUri
-                        // Now add this new video to the list
                         implementRepo.addUri(videoUri)
                     } else {
                         Log.e("CameraScreen", "Video recording failed: ${event.cause}")
                     }
                 }
-
                 else -> {
                     // Handle other events if needed
                 }
@@ -199,6 +189,7 @@ class ImplementVM(
             .withAudioEnabled()
         return Pair(recording, captureListener)
     }
+
     fun getSensorManager() : SensorManager{
         return sensorManager
     }
