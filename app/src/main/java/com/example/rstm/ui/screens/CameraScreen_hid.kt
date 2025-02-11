@@ -57,10 +57,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
-import com.arthenica.mobileffmpeg.Config
-import com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL
-import com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS
-import com.arthenica.mobileffmpeg.FFmpeg
 import com.example.rstm.model.SensorData
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.CoroutineScope
@@ -270,35 +266,6 @@ fun CameraPreviewScreen(
                         val command = "$inputs -filter_complex \"$filter\" -map \"[outv]\" $outputPath"
 
                         Log.e("sdaf", "_____________________________${uriList.size}    : $uriList")
-
-                        val executionId = FFmpeg.executeAsync(
-                            command
-                        )
-                        { _, returnCode ->
-                            when (returnCode) {
-                                RETURN_CODE_SUCCESS -> {
-                                    Log.i(
-                                        Config.TAG,
-                                        "Async command execution completed successfully."
-                                    )
-                                }
-                                RETURN_CODE_CANCEL -> {
-                                    Log.i(
-                                        Config.TAG,
-                                        "Async command execution cancelled by user."
-                                    )
-                                }
-                                else -> {
-                                    Log.i(
-                                        Config.TAG,
-                                        String.format(
-                                            "Async command execution failed with returnCode=%d.",
-                                            returnCode
-                                        )
-                                    )
-                                }
-                            }
-                        }
                     }
                 ) {
                     Icon(
