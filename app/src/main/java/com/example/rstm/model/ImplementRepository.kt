@@ -1,3 +1,4 @@
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
@@ -86,24 +87,24 @@ class ImplementRepository() {
 
     fun appendSensorDataToCSV(context: Context, data: SensorData) {
         val csvFileName = "sensor_data.csv"
-        val filePath = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), csvFileName)
         val maxFileSize = 100 * 1024 * 1024 // 100 MB in bytes
         val maxReadings = 40000
 
         try {
-            val isNewFile = !filePath.exists()
-
-            // Create the file if it doesn't exist and add the header
-            if (isNewFile) {
-                filePath.writeText(
-                    "Timestamp,AccelerometerX,AccelerometerY,AccelerometerZ,GyroscopeX,GyroscopeY,GyroscopeZ,Light,LocationLatitude,LocationLongitude,Altitude,Speed\n"
-                )
+            val resolver = context.contentResolver
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Files.FileColumns.DISPLAY_NAME, csvFileName)
+                put(MediaStore.Files.FileColumns.MIME_TYPE, "text/csv")
+                put(MediaStore.Files.FileColumns.RELATIVE_PATH, "Documents/")
             }
 
-            // Append the new data
-            val sensorData = data.copy(
-                timestamp = Timestamp(System.currentTimeMillis())
-            )
+            // Find existing file or create a new one
+            val existingUri = findFileUri(context, csvFileName)
+            val fileUri = existingUri ?: resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+            ?: throw Exception("Failed to create file URI in MediaStore")
+
+            // Prepare CSV line
+            val sensorData = data.copy(timestamp = Timestamp(System.currentTimeMillis()))
             val csvLine = "${sensorData.timestamp}," +
                     "${sensorData.accelerometerData.first}," +
                     "${sensorData.accelerometerData.second}," +
@@ -117,21 +118,20 @@ class ImplementRepository() {
                     "${sensorData.locationData.altitude}," +
                     "${sensorData.locationData.speed}\n"
 
-            // Use append mode
-            FileOutputStream(filePath, true).use { fos ->
-                OutputStreamWriter(fos).use { writer ->
-                    writer.write(csvLine)
-                }
+            // Append to file
+            resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
+                outputStream.write(csvLine.toByteArray(Charsets.UTF_8))
             }
 
-            // Check file size and number of readings
-            if (filePath.length() > maxFileSize || countReadings(filePath) > maxReadings) {
-                trimCSVFile(filePath)
+            // Check file size and trim if necessary
+            if (getFileSize(context, fileUri) > maxFileSize || countReadings(context, fileUri) > maxReadings) {
+                trimCSVFile(context, fileUri)
             }
         } catch (e: Exception) {
             Log.e("AppendSensorDataToCSV", "Error appending data: ${e.message}", e)
         }
     }
+
 
 
     // Function to count the number of readings in the CSV file (excluding the header)
@@ -162,13 +162,16 @@ class ImplementRepository() {
         }
     }
 
-
     fun saveUriListAsCSV(context: Context) {
         val csvFileName = "video_uri.csv"
-        val filePath = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), csvFileName)
+
+        // Save in Public Documents Directory instead of App-Specific Storage
+        val filePath = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+            csvFileName
+        )
 
         try {
-            // Build the CSV content from the URI list
             val csvBuilder = StringBuilder()
             csvBuilder.append("VideoUri\n")  // Add a header for the CSV file
 
@@ -176,7 +179,6 @@ class ImplementRepository() {
                 csvBuilder.append(uri.toString()).append("\n")  // Add each URI as a string
             }
 
-            // Write the CSV content to the file
             FileOutputStream(filePath).use { fos ->
                 OutputStreamWriter(fos).use { writer ->
                     writer.write(csvBuilder.toString())
@@ -192,6 +194,7 @@ class ImplementRepository() {
             Log.e("SaveUriListAsCSV", "Error saving URI list as CSV: ${e.message}", e)
         }
     }
+
 
     fun saveToDatabase(context: Context) {
         val csvFileName = "video_uri.csv"

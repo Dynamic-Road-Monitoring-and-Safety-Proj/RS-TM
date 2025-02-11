@@ -118,7 +118,6 @@ fun ImplementScreen(
                             executor,
                             captureListener
                         )
-
                         delay(5000)
 
 //                        withContext(Dispatchers.Main) {
