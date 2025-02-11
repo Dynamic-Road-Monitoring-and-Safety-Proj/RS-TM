@@ -48,10 +48,13 @@ fun YoloDetectionScreen(
     val detector = remember {
         Detector(context, modelPath, labelsPath, object : Detector.DetectorListener {
             override fun onEmptyDetect() {
+                Log.d("YoloDetection", "No detections found")
                 detectionResults = emptyList()
             }
 
             override fun onDetect(boundingBoxes: List<BoundingBox>, time: Long) {
+                Log.d("YoloDetection", "Detected ${boundingBoxes.size} objects in ${time}ms")
+                Log.d("YoloDetection", "First box: ${boundingBoxes.firstOrNull()}")
                 detectionResults = boundingBoxes
                 inferenceTime = time
             }
@@ -181,7 +184,11 @@ private fun DetectionOverlay(
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier = modifier) {
+        Log.d("YoloDetection", "Drawing ${boundingBoxes.size} boxes at size ${size.width}x${size.height}")
         boundingBoxes.forEach { box ->
+            val left = box.x1 * size.width
+            val top = box.y1 * size.height
+            Log.d("YoloDetection", "Drawing box at ($left, $top)")
             drawBoundingBox(box)
             drawLabel(box)
         }

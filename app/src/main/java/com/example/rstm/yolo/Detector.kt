@@ -38,42 +38,35 @@ class Detector(
         .build()
 
     fun setup() {
+        // Change this line - use only the filename instead of full path
+        val model = FileUtil.loadMappedFile(context, "model.tflite")  // Just the filename
+
+        val options = Interpreter.Options()
+        options.numThreads = 4
+        interpreter = Interpreter(model, options)
+
+        val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
+        val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
+
+        tensorWidth = inputShape[1]
+        tensorHeight = inputShape[2]
+        numChannel = outputShape[1]
+        numElements = outputShape[2]
+
         try {
-            // Load model from assets folder
-            val model = FileUtil.loadMappedFile(context, "model.tflite")
+            val inputStream: InputStream = context.assets.open(labelPath)
+            val reader = BufferedReader(InputStreamReader(inputStream))
 
-            val options = Interpreter.Options()
-            options.numThreads = 4
-            interpreter = Interpreter(model, options)
-
-            val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
-            val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
-
-            tensorWidth = inputShape[1]
-            tensorHeight = inputShape[2]
-            numChannel = outputShape[1]
-            numElements = outputShape[2]
-
-            try {
-                val inputStream: InputStream = context.assets.open(labelPath)
-                val reader = BufferedReader(InputStreamReader(inputStream))
-
-                var line: String? = reader.readLine()
-                while (line != null && line != "") {
-                    labels.add(line)
-                    line = reader.readLine()
-                }
-
-                reader.close()
-                inputStream.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
+            var line: String? = reader.readLine()
+            while (line != null && line != "") {
+                labels.add(line)
+                line = reader.readLine()
             }
 
-        } catch (e: Exception) {
-            Log.e("Detector", "Error setting up detector")
+            reader.close()
+            inputStream.close()
+        } catch (e: IOException) {
             e.printStackTrace()
-            // You might want to handle this error appropriately
         }
     }
 
@@ -101,10 +94,8 @@ class Detector(
         val output = TensorBuffer.createFixedSize(intArrayOf(1 , numChannel, numElements), OUTPUT_IMAGE_TYPE)
         interpreter?.run(imageBuffer, output.buffer)
 
-
         val bestBoxes = bestBox(output.floatArray)
         inferenceTime = SystemClock.uptimeMillis() - inferenceTime
-
 
         if (bestBoxes == null) {
             detectorListener.onEmptyDetect()
