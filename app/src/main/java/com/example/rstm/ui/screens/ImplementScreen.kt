@@ -108,9 +108,9 @@ fun ImplementScreen(
                     async {
                         val result = viewModel.captureVideo(videoCapture, context)
 
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "starting", Toast.LENGTH_SHORT).show()
-                        }
+//                        withContext(Dispatchers.Main) {
+//                            Toast.makeText(context, "starting", Toast.LENGTH_SHORT).show()
+//                        }
 
                         captureListener = result.second
                         recording = result.first
@@ -121,14 +121,14 @@ fun ImplementScreen(
 
                         delay(5000)
 
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "stopping", Toast.LENGTH_SHORT).show()
-                        }
+//                        withContext(Dispatchers.Main) {
+//                            Toast.makeText(context, "stopping", Toast.LENGTH_SHORT).show()
+//                        }
                         onRecording?.stop()
 
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "stopped", Toast.LENGTH_SHORT).show()
-                        }
+//                        withContext(Dispatchers.Main) {
+//                            Toast.makeText(context, "stopped", Toast.LENGTH_SHORT).show()
+//                        }
                         delay(500)
                     }.await()
                 }

@@ -166,11 +166,11 @@ class ImplementVM(
                 }
                 is VideoRecordEvent.Finalize -> {
                     if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
-                        Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
+//                        Log.d("CameraScreen", "Video recording succeeded: ${event.outputResults.outputUri}")
 
-                        CoroutineScope(Dispatchers.Main).launch {
-                            Toast.makeText(context, "URI is ${event.outputResults.outputUri}", Toast.LENGTH_LONG).show()
-                        }
+//                        CoroutineScope(Dispatchers.Main).launch {
+//                            Toast.makeText(context, "URI is ${event.outputResults.outputUri}", Toast.LENGTH_LONG).show()
+//                        }
 
                         val videoUri = event.outputResults.outputUri
                         implementRepo.addUri(videoUri)
