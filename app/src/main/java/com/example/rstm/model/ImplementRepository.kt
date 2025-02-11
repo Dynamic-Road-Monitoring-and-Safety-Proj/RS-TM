@@ -98,12 +98,10 @@ class ImplementRepository() {
                 put(MediaStore.Files.FileColumns.RELATIVE_PATH, "Documents/")
             }
 
-            // Find existing file or create a new one
             val existingUri = findFileUri(context, csvFileName)
             val fileUri = existingUri ?: resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
             ?: throw Exception("Failed to create file URI in MediaStore")
 
-            // Prepare CSV line
             val sensorData = data.copy(timestamp = Timestamp(System.currentTimeMillis()))
             val csvLine = "${sensorData.timestamp}," +
                     "${sensorData.accelerometerData.first}," +
@@ -118,12 +116,10 @@ class ImplementRepository() {
                     "${sensorData.locationData.altitude}," +
                     "${sensorData.locationData.speed}\n"
 
-            // Append to file
             resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
                 outputStream.write(csvLine.toByteArray(Charsets.UTF_8))
             }
 
-            // Check file size and trim if necessary
             if (getFileSize(context, fileUri) > maxFileSize || countReadings(context, fileUri) > maxReadings) {
                 trimCSVFile(context, fileUri)
             }
@@ -132,35 +128,60 @@ class ImplementRepository() {
         }
     }
 
+    private fun findFileUri(context: Context, fileName: String): Uri? {
+        val projection = arrayOf(MediaStore.Files.FileColumns._ID)
+        val selection = "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ? AND ${MediaStore.Files.FileColumns.RELATIVE_PATH} = 'Documents/'"
+        val selectionArgs = arrayOf(fileName)
 
-
-    // Function to count the number of readings in the CSV file (excluding the header)
-    fun countReadings(file: File): Int {
-        return try {
-            file.readLines().size - 1 // Subtract 1 for the header
-        } catch (e: Exception) {
-            Log.e("CountReadings", "Error counting readings: ${e.message}", e)
-            0
+        context.contentResolver.query(MediaStore.Files.getContentUri("external"), projection, selection, selectionArgs, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID))
+                return Uri.withAppendedPath(MediaStore.Files.getContentUri("external"), id.toString())
+            }
         }
+        return null
+    }
+
+    private fun getFileSize(context: Context, uri: Uri): Long {
+        context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+            return pfd.statSize
+        }
+        return 0L
+    }
+
+    private fun countReadings(context: Context, uri: Uri): Int {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            return inputStream.bufferedReader().lineSequence().count() - 1
+        }
+        return 0
     }
 
     // Function to trim the first 50% of data from the CSV file
-    fun trimCSVFile(file: File) {
+    fun trimCSVFile(context: Context, fileUri: Uri) {
         try {
-            val lines = file.readLines()
+            val resolver = context.contentResolver
+
+            // Read the file content
+            val lines = resolver.openInputStream(fileUri)?.bufferedReader()?.readLines() ?: emptyList()
+            if (lines.isEmpty()) return
+
             val header = lines.first()
             val data = lines.drop(1) // Exclude the header
             val trimmedData = data.drop(data.size / 2) // Drop the first 50% of rows
 
             // Rewrite the file with the header and trimmed data
-            file.writeText("$header\n")
-            file.appendText(trimmedData.joinToString("\n") + "\n")
+            resolver.openOutputStream(fileUri, "wt")?.bufferedWriter()?.use { writer ->
+                writer.write(header)
+                writer.newLine()
+                trimmedData.forEach { writer.write(it); writer.newLine() }
+            }
 
             Log.d("TrimCSVFile", "Trimmed CSV file to 50% of its original size")
         } catch (e: Exception) {
             Log.e("TrimCSVFile", "Error trimming CSV file: ${e.message}", e)
         }
     }
+
 
     fun saveUriListAsCSV(context: Context) {
         val csvFileName = "video_uri.csv"
