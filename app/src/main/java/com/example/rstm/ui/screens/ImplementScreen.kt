@@ -98,9 +98,8 @@ fun ImplementScreen(
     val executor = Executors.newCachedThreadPool()
     var captureListener : Consumer<VideoRecordEvent>
 
-    LaunchedEffect(Unit) {   // each row of sensor data will be saved after 500ms and some internal processing delay
+    LaunchedEffect(Unit) {
         while (true) {
-            delay(500)
             viewModel.getRepository().appendSensorDataToCSV(context, sensorData)
         }
     }
@@ -131,7 +130,7 @@ fun ImplementScreen(
 //                        withContext(Dispatchers.Main) {
 //                            Toast.makeText(context, "stopped", Toast.LENGTH_SHORT).show()
 //                        }
-                        delay(500)
+                        delay(100)
                     }.await()
                 }
             } catch (e: Exception) {
@@ -193,7 +192,7 @@ fun ImplementScreen(
                         scope.launch {
                             onRecording?.stop() // Stop the current recording
 
-                            delay(1000) // Small delay to ensure stop completes
+                            delay(100) // Small delay to ensure stop completes
 
                             // Add the last recorded video to the list (handled in the captureListener already)
                             val result = viewModel.captureVideo(videoCapture, context)
