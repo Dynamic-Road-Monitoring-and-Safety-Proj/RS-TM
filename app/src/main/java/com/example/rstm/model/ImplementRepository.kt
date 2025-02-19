@@ -105,7 +105,8 @@ class ImplementRepository() {
             val existingUri = findFileUri(context, csvFileName)
             val fileUri = existingUri ?: resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
             ?: throw Exception("Failed to create file URI in MediaStore")
-
+            val header = "Timestamp,Accelerometer_X,Accelerometer_Y,Accelerometer_Z," +
+                    "Gyroscope_X,Gyroscope_Y,Gyroscope_Z,Light,Latitude,Longitude,Altitude,Speed\n"
             val sensorData = data.copy(timestamp = Timestamp(System.currentTimeMillis()))
             val csvLine = "${sensorData.timestamp}," +
                     "${sensorData.accelerometerData.first}," +
@@ -120,8 +121,13 @@ class ImplementRepository() {
                     "${sensorData.locationData.altitude}," +
                     "${sensorData.locationData.speed}\n"
 
+            val isFileEmpty = resolver.openInputStream(fileUri)?.bufferedReader()?.use { it.readLine() } == null
+
             resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
-                outputStream.write(csvLine.toByteArray(Charsets.UTF_8))
+                if (isFileEmpty) {
+                    outputStream.write(header.toByteArray(Charsets.UTF_8)) // Write header if file is empty
+                }
+                outputStream.write(csvLine.toByteArray(Charsets.UTF_8)) // Append sensor data
             }
 
             if (getFileSize(context, fileUri) > maxFileSize || countReadings(context, fileUri) > maxReadings) {
@@ -189,9 +195,9 @@ class ImplementRepository() {
 
     @RequiresApi(Build.VERSION_CODES.Q)
     suspend fun saveLastTwoVideosAndCSV(context: Context) {
-        withContext(Dispatchers.IO) { // Run on background thread
+        withContext(Dispatchers.IO) {
             val resolver = context.contentResolver
-            val dcimDir = "DCIM/MyRecordings"
+            val dcimDir = "DCIM/triggered"
             val timestamp = System.currentTimeMillis()
             val csvFileName = "video_uri_$timestamp.csv"
 
@@ -205,7 +211,7 @@ class ImplementRepository() {
                     return@withContext
                 }
 
-                val lastTwoUris = if (uriList.size >= 2) uriList.takeLast(2) else uriList
+                val lastTwoUris = uriList.takeLast(2)
 
                 val csvBuilder = StringBuilder()
                 csvBuilder.append("VideoUri\n")
@@ -229,19 +235,19 @@ class ImplementRepository() {
                     resolver.openInputStream(uri)?.use { inputStream ->
                         resolver.openOutputStream(newUri)?.use { outputStream ->
                             inputStream.copyTo(outputStream)
+                            Log.d("SaveToDCIM", "Successfully copied: $fileName")
                         }
-                    }
-
-                    Log.d("SaveToDCIM", "Saved video as: $fileName in DCIM/MyRecordings")
+                    } ?: Log.e("SaveToDCIM", "Error opening input stream for $uri")
                 }
 
+                // Fix: Use Files.getContentUri("external") instead of Downloads
                 val csvContentValues = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, csvFileName)
-                    put(MediaStore.Downloads.MIME_TYPE, "text/csv")
-                    put(MediaStore.Downloads.RELATIVE_PATH, dcimDir)
+                    put(MediaStore.Files.FileColumns.DISPLAY_NAME, csvFileName)
+                    put(MediaStore.Files.FileColumns.MIME_TYPE, "text/csv")
+                    put(MediaStore.Files.FileColumns.RELATIVE_PATH, dcimDir)
                 }
 
-                val csvUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, csvContentValues)
+                val csvUri = resolver.insert(MediaStore.Files.getContentUri("external"), csvContentValues)
                 if (csvUri != null) {
                     resolver.openOutputStream(csvUri)?.use { outputStream ->
                         outputStream.write(csvBuilder.toString().toByteArray())
@@ -259,11 +265,12 @@ class ImplementRepository() {
             } catch (e: Exception) {
                 Log.e("SaveToDCIM", "Error saving files: ${e.message}", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Error saving files", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Error saving files: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
     }
+
 
 
 

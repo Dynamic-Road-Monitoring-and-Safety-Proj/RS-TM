@@ -97,12 +97,13 @@ fun ImplementScreen(
 
     val executor = Executors.newCachedThreadPool()
     var captureListener : Consumer<VideoRecordEvent>
-
     LaunchedEffect(Unit) {
         while (true) {
             viewModel.getRepository().appendSensorDataToCSV(context, sensorData)
+            delay(50)
         }
     }
+
     LaunchedEffect(Unit) {
         scope.launch {
             try {
