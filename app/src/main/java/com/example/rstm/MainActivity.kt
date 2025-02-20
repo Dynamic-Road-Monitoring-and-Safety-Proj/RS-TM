@@ -258,7 +258,7 @@ class MainActivity : AppCompatActivity() {
                             CameraPreviewScreen(Modifier = Modifier.padding(innerPadding), sensorManager = sensorManager, fusedLocationClient = fusedLocationClient)
                         }
                         composable("Implement Screen"){
-                            ImplementScreen(viewModel = implementVM, Modifier = Modifier.padding(innerPadding))
+                            ImplementScreen(viewModel = implementVM, modifier = Modifier.padding(innerPadding))
                         }
                     }
                 }

@@ -17,8 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStreamWriter
 import java.sql.Timestamp
 
 class ImplementRepository() {
@@ -89,27 +87,28 @@ class ImplementRepository() {
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
 
-    fun appendSensorDataToCSV(context: Context, data: SensorData) {
+    fun appendSensorDataToCSV(context: Context, data: MutableList<SensorData>) {
         val csvFileName = "sensor_data.csv"
         val maxFileSize = 100 * 1024 * 1024 // 100 MB in bytes
         val maxReadings = 40000
 
         try {
             val resolver = context.contentResolver
+            val existingUri = findFileUri(context, csvFileName)
+            val isNewFile = existingUri == null
+
             val contentValues = ContentValues().apply {
                 put(MediaStore.Files.FileColumns.DISPLAY_NAME, csvFileName)
                 put(MediaStore.Files.FileColumns.MIME_TYPE, "text/csv")
-                put(MediaStore.Files.FileColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
+                put(MediaStore.Files.FileColumns.RELATIVE_PATH, "Documents/")
             }
 
-            val existingUri = findFileUri(context, csvFileName)
-            val fileUri = existingUri ?: resolver.insert(MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL), contentValues)
+            val fileUri = existingUri ?: resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
             ?: throw Exception("Failed to create file URI in MediaStore")
 
-            val isFileEmpty = resolver.openInputStream(fileUri)?.bufferedReader()?.use { it.readLine() } == null
-            val header = "Timestamp,Accelerometer_X,Accelerometer_Y,Accelerometer_Z," +
-                    "Gyroscope_X,Gyroscope_Y,Gyroscope_Z,Light,Latitude,Longitude,Altitude,Speed\n"
-            val sensorData = data.copy(timestamp = Timestamp(System.currentTimeMillis()))
+            val sensorData = data.lastOrNull()?.copy(timestamp = Timestamp(System.currentTimeMillis()))
+                ?: return  // Exit if the list is empty
+
             val csvLine = "${sensorData.timestamp}," +
                     "${sensorData.accelerometerData.first}," +
                     "${sensorData.accelerometerData.second}," +
@@ -122,15 +121,14 @@ class ImplementRepository() {
                     "${sensorData.locationData.longitude}," +
                     "${sensorData.locationData.altitude}," +
                     "${sensorData.locationData.speed}\n"
-            resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
-                if (isFileEmpty) {
-                    outputStream.write(header.toByteArray(Charsets.UTF_8)) // Write header first
+
+            resolver.openOutputStream(fileUri, if (isNewFile) "w" else "wa")?.use { outputStream ->
+                if (isNewFile) {
+                    val header = "Timestamp,Accel_X,Accel_Y,Accel_Z,Gyro_X,Gyro_Y,Gyro_Z,Light,Latitude,Longitude,Altitude,Speed\n"
+                    outputStream.write(header.toByteArray(Charsets.UTF_8))
                 }
-                outputStream.write(csvLine.toByteArray(Charsets.UTF_8)) // Append sensor data
+                outputStream.write(csvLine.toByteArray(Charsets.UTF_8))
             }
-
-            Log.d("AppendSensorDataToCSV", "CSV saved at URI: $fileUri")
-
 
             if (getFileSize(context, fileUri) > maxFileSize || countReadings(context, fileUri) > maxReadings) {
                 trimCSVFile(context, fileUri)
@@ -139,6 +137,7 @@ class ImplementRepository() {
             Log.e("AppendSensorDataToCSV", "Error appending data: ${e.message}", e)
         }
     }
+
 
     private fun findFileUri(context: Context, fileName: String): Uri? {
         val projection = arrayOf(MediaStore.Files.FileColumns._ID)
