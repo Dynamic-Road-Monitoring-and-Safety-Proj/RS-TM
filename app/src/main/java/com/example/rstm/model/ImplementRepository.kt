@@ -99,12 +99,14 @@ class ImplementRepository() {
             val contentValues = ContentValues().apply {
                 put(MediaStore.Files.FileColumns.DISPLAY_NAME, csvFileName)
                 put(MediaStore.Files.FileColumns.MIME_TYPE, "text/csv")
-                put(MediaStore.Files.FileColumns.RELATIVE_PATH, "Documents/")
+                put(MediaStore.Files.FileColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
             }
 
             val existingUri = findFileUri(context, csvFileName)
-            val fileUri = existingUri ?: resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+            val fileUri = existingUri ?: resolver.insert(MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL), contentValues)
             ?: throw Exception("Failed to create file URI in MediaStore")
+
+            val isFileEmpty = resolver.openInputStream(fileUri)?.bufferedReader()?.use { it.readLine() } == null
             val header = "Timestamp,Accelerometer_X,Accelerometer_Y,Accelerometer_Z," +
                     "Gyroscope_X,Gyroscope_Y,Gyroscope_Z,Light,Latitude,Longitude,Altitude,Speed\n"
             val sensorData = data.copy(timestamp = Timestamp(System.currentTimeMillis()))
@@ -120,15 +122,15 @@ class ImplementRepository() {
                     "${sensorData.locationData.longitude}," +
                     "${sensorData.locationData.altitude}," +
                     "${sensorData.locationData.speed}\n"
-
-            val isFileEmpty = resolver.openInputStream(fileUri)?.bufferedReader()?.use { it.readLine() } == null
-
             resolver.openOutputStream(fileUri, "wa")?.use { outputStream ->
                 if (isFileEmpty) {
-                    outputStream.write(header.toByteArray(Charsets.UTF_8)) // Write header if file is empty
+                    outputStream.write(header.toByteArray(Charsets.UTF_8)) // Write header first
                 }
                 outputStream.write(csvLine.toByteArray(Charsets.UTF_8)) // Append sensor data
             }
+
+            Log.d("AppendSensorDataToCSV", "CSV saved at URI: $fileUri")
+
 
             if (getFileSize(context, fileUri) > maxFileSize || countReadings(context, fileUri) > maxReadings) {
                 trimCSVFile(context, fileUri)
@@ -140,8 +142,8 @@ class ImplementRepository() {
 
     private fun findFileUri(context: Context, fileName: String): Uri? {
         val projection = arrayOf(MediaStore.Files.FileColumns._ID)
-        val selection = "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ? AND ${MediaStore.Files.FileColumns.RELATIVE_PATH} = 'Documents/'"
-        val selectionArgs = arrayOf(fileName)
+        val selection = "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ? AND ${MediaStore.Files.FileColumns.RELATIVE_PATH} = ?"
+        val selectionArgs = arrayOf(fileName, Environment.DIRECTORY_DOCUMENTS + "/")
 
         context.contentResolver.query(MediaStore.Files.getContentUri("external"), projection, selection, selectionArgs, null)?.use { cursor ->
             if (cursor.moveToFirst()) {
@@ -151,6 +153,7 @@ class ImplementRepository() {
         }
         return null
     }
+
 
     private fun getFileSize(context: Context, uri: Uri): Long {
         context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
@@ -191,7 +194,6 @@ class ImplementRepository() {
             Log.e("TrimCSVFile", "Error trimming CSV file: ${e.message}", e)
         }
     }
-
 
     @RequiresApi(Build.VERSION_CODES.Q)
     suspend fun saveLastTwoVideosAndCSV(context: Context) {
@@ -245,6 +247,7 @@ class ImplementRepository() {
                     put(MediaStore.Files.FileColumns.DISPLAY_NAME, csvFileName)
                     put(MediaStore.Files.FileColumns.MIME_TYPE, "text/csv")
                     put(MediaStore.Files.FileColumns.RELATIVE_PATH, dcimDir)
+
                 }
 
                 val csvUri = resolver.insert(MediaStore.Files.getContentUri("external"), csvContentValues)
@@ -252,10 +255,11 @@ class ImplementRepository() {
                     resolver.openOutputStream(csvUri)?.use { outputStream ->
                         outputStream.write(csvBuilder.toString().toByteArray())
                     }
-                    Log.d("SaveCSV", "CSV saved as: $csvFileName in DCIM/MyRecordings")
+                    Log.d("SaveCSV", "CSV saved as: $csvFileName in DCIM/triggered")
                 } else {
                     Log.e("SaveCSV", "Failed to create CSV file")
                 }
+
 
                 // Show success message on main thread
                 withContext(Dispatchers.Main) {
@@ -283,6 +287,8 @@ class ImplementRepository() {
             videoUriFile = filePath.absolutePath,  // Save the absolute path instead of just the file name
             csvUri = state.value?.csvUri
         )
+
+
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
