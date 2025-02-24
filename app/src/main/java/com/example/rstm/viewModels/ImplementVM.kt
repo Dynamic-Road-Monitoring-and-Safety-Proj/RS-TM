@@ -35,17 +35,7 @@ class ImplementVM(
     private val fusedLocationClient: FusedLocationProviderClient, // remove these two from UI
     private val implementRepo : ImplementRepository
 ) : ViewModel() {
-    // State management
-    private val _lensFacing = MutableLiveData(CameraSelector.LENS_FACING_BACK)
 
-    // Toggle between front and back camera
-    fun toggleLensFacing() {
-        _lensFacing.value = if (_lensFacing.value == CameraSelector.LENS_FACING_BACK) {
-            CameraSelector.LENS_FACING_FRONT
-        } else {
-            CameraSelector.LENS_FACING_BACK
-        }
-    }
     private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
         suspendCoroutine { continuation ->
             ProcessCameraProvider.getInstance(this).also { cameraProvider ->
@@ -76,24 +66,6 @@ class ImplementVM(
             }
         }
         return null
-    }
-
-    // support functions for capture video function
-    private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>, maxVideos: Int = 4): Int {
-        if (uriList.size > maxVideos) {  // Keep at least `maxVideos` videos
-            val oldestUri = uriList[0]
-            val deleted = context.contentResolver.delete(oldestUri, null, null)
-
-            if (deleted > 0) {
-                Log.d("DeleteVideo", "Deleted oldest video: $oldestUri")
-                uriList.removeAt(0)
-                return 1
-            } else {
-                Log.e("DeleteVideo", "Failed to delete oldest video: $oldestUri")
-                return 0
-            }
-        }
-        return 0  // No deletion needed
     }
 
     private fun renameVideos(context: Context, uriList: MutableList<Uri>) {
@@ -136,18 +108,11 @@ class ImplementVM(
 
         // Rename existing videos to shift them down (4.mp4 → 3.mp4, etc.)
         if (uriList != null) {
-            renameVideos(context, uriList)
+            renameVideos(context, uriList) // TODO - rename video logic
         }
 
         // Newest clip should always be saved as "5.mp4"
         val fileName = "5.mp4"
-
-        // Delete existing 5.mp4 (to avoid duplicates)
-        val existingUri = findVideoUriByName(context, fileName)
-        if (existingUri != null) {
-            context.contentResolver.delete(existingUri, null, null)
-            Log.d("CameraScreen", "Deleted existing video: $fileName")
-        }
 
         val contentValues = ContentValues().apply {
             put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
@@ -156,15 +121,14 @@ class ImplementVM(
         val mediaStoreOutput = MediaStoreOutputOptions.Builder(
             context.contentResolver,
             MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-        )
-            .setContentValues(contentValues)
+        ).setContentValues(contentValues)
             .build()
 
         val captureListener = Consumer<VideoRecordEvent> { event ->
             when (event) {
-                is VideoRecordEvent.Start -> {
-                    Log.d("CameraScreen", "Recording started")
-                }
+//                is VideoRecordEvent.Start -> {
+//                    Log.d("CameraScreen", "Recording started")
+//                }
                 is VideoRecordEvent.Finalize -> {
                     if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
                         val videoUri = event.outputResults.outputUri
@@ -172,9 +136,6 @@ class ImplementVM(
                     } else {
                         Log.e("CameraScreen", "Video recording failed: ${event.cause}")
                     }
-                }
-                else -> {
-                    // Handle other events if needed
                 }
             }
         }
