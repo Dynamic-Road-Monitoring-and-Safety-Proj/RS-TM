@@ -1,8 +1,12 @@
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
 import com.example.rstm.MainActivity
 import com.example.rstm.model.SensorData
@@ -11,9 +15,8 @@ import com.example.rstm.roomImplementation.RoomEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStreamWriter
 import java.sql.Timestamp
 
 class ImplementRepository() {
@@ -21,18 +24,6 @@ class ImplementRepository() {
     private val state = MutableLiveData(State())
 
     private val _uriList = MutableLiveData<List<Uri>>(emptyList())
-
-    private val scope = CoroutineScope(Dispatchers.IO)
-    val sensorDataList : MutableList<SensorData> = mutableListOf()
-
-    fun listMaker(sensorData: SensorData) {
-        scope.launch(Dispatchers.IO) {
-            val newSensorData = sensorData.copy(
-                timestamp = Timestamp(System.currentTimeMillis())
-            )
-            sensorDataList.add(newSensorData)
-        }
-    }
 
     val dao = MainActivity.appDatabase.getDao()
     // Helper to update _uriList safely
@@ -84,7 +75,7 @@ class ImplementRepository() {
     fun initializeUriList(context: Context) {
         val initialList = mutableListOf<Uri>()
 
-        for (i in 0..5) {
+        for (i in 0..1) {
             val fileName = "$i.mp4"
             val fileUri = findVideoUriByName(context, fileName)
             if (fileUri != null) {
@@ -96,24 +87,28 @@ class ImplementRepository() {
         Log.d("InitializeUriList", "URI list initialized with ${initialList.size} items.")
     }
 
-    fun appendSensorDataToCSV(context: Context, data: SensorData) {
+    fun appendSensorDataToCSV(context: Context, data: MutableList<SensorData>) {
         val csvFileName = "sensor_data.csv"
-        val filePath = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), csvFileName)
         val maxFileSize = 100 * 1024 * 1024 // 100 MB in bytes
         val maxReadings = 40000
 
         try {
-            // Create the file if it doesn't exist and add the header
-            if (!filePath.exists()) {
-                filePath.writeText(
-                    "Timestamp,AccelerometerX,AccelerometerY,AccelerometerZ,GyroscopeX,GyroscopeY,GyroscopeZ,Light,LocationLatitude,LocationLongitude,Altitude,Speed\n"
-                )
+            val resolver = context.contentResolver
+            val existingUri = findFileUri(context, csvFileName)
+            val isNewFile = existingUri == null
+
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Files.FileColumns.DISPLAY_NAME, csvFileName)
+                put(MediaStore.Files.FileColumns.MIME_TYPE, "text/csv")
+                put(MediaStore.Files.FileColumns.RELATIVE_PATH, "Documents/")
             }
 
-            // Append the new data
-            val sensorData = data.copy(
-                timestamp = Timestamp(System.currentTimeMillis())
-            )
+            val fileUri = existingUri ?: resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+            ?: throw Exception("Failed to create file URI in MediaStore")
+
+            val sensorData = data.lastOrNull()?.copy(timestamp = Timestamp(System.currentTimeMillis()))
+                ?: return  // Exit if the list is empty
+
             val csvLine = "${sensorData.timestamp}," +
                     "${sensorData.accelerometerData.first}," +
                     "${sensorData.accelerometerData.second}," +
@@ -127,38 +122,71 @@ class ImplementRepository() {
                     "${sensorData.locationData.altitude}," +
                     "${sensorData.locationData.speed}\n"
 
-            filePath.appendText(csvLine)
+            resolver.openOutputStream(fileUri, if (isNewFile) "w" else "wa")?.use { outputStream ->
+                if (isNewFile) {
+                    val header = "Timestamp,Accel_X,Accel_Y,Accel_Z,Gyro_X,Gyro_Y,Gyro_Z,Light,Latitude,Longitude,Altitude,Speed\n"
+                    outputStream.write(header.toByteArray(Charsets.UTF_8))
+                }
+                outputStream.write(csvLine.toByteArray(Charsets.UTF_8))
+            }
 
-            // Check file size and number of readings
-            if (filePath.length() > maxFileSize || countReadings(filePath) > maxReadings) {
-                trimCSVFile(filePath)
+            if (getFileSize(context, fileUri) > maxFileSize || countReadings(context, fileUri) > maxReadings) {
+                trimCSVFile(context, fileUri)
             }
         } catch (e: Exception) {
             Log.e("AppendSensorDataToCSV", "Error appending data: ${e.message}", e)
         }
     }
 
-    // Function to count the number of readings in the CSV file (excluding the header)
-    fun countReadings(file: File): Int {
-        return try {
-            file.readLines().size - 1 // Subtract 1 for the header
-        } catch (e: Exception) {
-            Log.e("CountReadings", "Error counting readings: ${e.message}", e)
-            0
+
+    private fun findFileUri(context: Context, fileName: String): Uri? {
+        val projection = arrayOf(MediaStore.Files.FileColumns._ID)
+        val selection = "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ? AND ${MediaStore.Files.FileColumns.RELATIVE_PATH} = ?"
+        val selectionArgs = arrayOf(fileName, Environment.DIRECTORY_DOCUMENTS + "/")
+
+        context.contentResolver.query(MediaStore.Files.getContentUri("external"), projection, selection, selectionArgs, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID))
+                return Uri.withAppendedPath(MediaStore.Files.getContentUri("external"), id.toString())
+            }
         }
+        return null
+    }
+
+
+    private fun getFileSize(context: Context, uri: Uri): Long {
+        context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+            return pfd.statSize
+        }
+        return 0L
+    }
+
+    private fun countReadings(context: Context, uri: Uri): Int {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            return inputStream.bufferedReader().lineSequence().count() - 1
+        }
+        return 0
     }
 
     // Function to trim the first 50% of data from the CSV file
-    fun trimCSVFile(file: File) {
+    fun trimCSVFile(context: Context, fileUri: Uri) {
         try {
-            val lines = file.readLines()
+            val resolver = context.contentResolver
+
+            // Read the file content
+            val lines = resolver.openInputStream(fileUri)?.bufferedReader()?.readLines() ?: emptyList()
+            if (lines.isEmpty()) return
+
             val header = lines.first()
             val data = lines.drop(1) // Exclude the header
             val trimmedData = data.drop(data.size / 2) // Drop the first 50% of rows
 
             // Rewrite the file with the header and trimmed data
-            file.writeText("$header\n")
-            file.appendText(trimmedData.joinToString("\n") + "\n")
+            resolver.openOutputStream(fileUri, "wt")?.bufferedWriter()?.use { writer ->
+                writer.write(header)
+                writer.newLine()
+                trimmedData.forEach { writer.write(it); writer.newLine() }
+            }
 
             Log.d("TrimCSVFile", "Trimmed CSV file to 50% of its original size")
         } catch (e: Exception) {
@@ -166,36 +194,88 @@ class ImplementRepository() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
+    suspend fun saveLastTwoVideosAndCSV(context: Context) {
+        withContext(Dispatchers.IO) {
+            val resolver = context.contentResolver
+            val dcimDir = "DCIM/triggered"
+            val timestamp = System.currentTimeMillis()
+            val csvFileName = "video_uri_$timestamp.csv"
 
-    fun saveUriListAsCSV(context: Context) {
-        val csvFileName = "video_uri.csv"
-        val filePath = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), csvFileName)
+            try {
+                val uriList = _uriList.value ?: emptyList()
+                if (uriList.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "No videos available to save", Toast.LENGTH_SHORT).show()
+                    }
+                    Log.e("SaveToDCIM", "No videos available to save")
+                    return@withContext
+                }
 
-        try {
-            // Build the CSV content from the URI list
-            val csvBuilder = StringBuilder()
-            csvBuilder.append("VideoUri\n")  // Add a header for the CSV file
+                val lastTwoUris = uriList.takeLast(2)
 
-            _uriList.value?.forEach { uri ->
-                csvBuilder.append(uri.toString()).append("\n")  // Add each URI as a string
-            }
+                val csvBuilder = StringBuilder()
+                csvBuilder.append("VideoUri\n")
 
-            // Write the CSV content to the file
-            FileOutputStream(filePath).use { fos ->
-                OutputStreamWriter(fos).use { writer ->
-                    writer.write(csvBuilder.toString())
+                for ((index, uri) in lastTwoUris.withIndex()) {
+                    val fileName = "Recording_${timestamp}_$index.mp4"
+                    csvBuilder.append(uri.toString()).append("\n")
+
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+                        put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                        put(MediaStore.Video.Media.RELATIVE_PATH, dcimDir)
+                    }
+
+                    val newUri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    if (newUri == null) {
+                        Log.e("SaveToDCIM", "Failed to create new file for $fileName")
+                        continue
+                    }
+
+                    resolver.openInputStream(uri)?.use { inputStream ->
+                        resolver.openOutputStream(newUri)?.use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                            Log.d("SaveToDCIM", "Successfully copied: $fileName")
+                        }
+                    } ?: Log.e("SaveToDCIM", "Error opening input stream for $uri")
+                }
+
+                // Fix: Use Files.getContentUri("external") instead of Downloads
+                val csvContentValues = ContentValues().apply {
+                    put(MediaStore.Files.FileColumns.DISPLAY_NAME, csvFileName)
+                    put(MediaStore.Files.FileColumns.MIME_TYPE, "text/csv")
+                    put(MediaStore.Files.FileColumns.RELATIVE_PATH, dcimDir)
+
+                }
+
+                val csvUri = resolver.insert(MediaStore.Files.getContentUri("external"), csvContentValues)
+                if (csvUri != null) {
+                    resolver.openOutputStream(csvUri)?.use { outputStream ->
+                        outputStream.write(csvBuilder.toString().toByteArray())
+                    }
+                    Log.d("SaveCSV", "CSV saved as: $csvFileName in DCIM/triggered")
+                } else {
+                    Log.e("SaveCSV", "Failed to create CSV file")
+                }
+
+
+                // Show success message on main thread
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Videos & CSV saved successfully!", Toast.LENGTH_SHORT).show()
+                }
+
+            } catch (e: Exception) {
+                Log.e("SaveToDCIM", "Error saving files: ${e.message}", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error saving files: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
-
-            Log.d("SaveUriListAsCSV", "CSV saved at: ${filePath.absolutePath}")
-
-            // Update LiveData to reflect that the CSV has been saved
-            state.value = state.value?.copy(csvUri = Uri.fromFile(filePath))
-            state.postValue(state.value)
-        } catch (e: Exception) {
-            Log.e("SaveUriListAsCSV", "Error saving URI list as CSV: ${e.message}", e)
         }
     }
+
+
+
 
     fun saveToDatabase(context: Context) {
         val csvFileName = "video_uri.csv"
@@ -206,6 +286,8 @@ class ImplementRepository() {
             videoUriFile = filePath.absolutePath,  // Save the absolute path instead of just the file name
             csvUri = state.value?.csvUri
         )
+
+
 
         CoroutineScope(Dispatchers.IO).launch {
             try {

@@ -1,6 +1,7 @@
 import android.hardware.SensorManager
+import android.os.Build
 import android.util.Log
-import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraSelector.LENS_FACING_BACK
 import androidx.camera.core.CameraSelector.LENS_FACING_FRONT
@@ -10,7 +11,6 @@ import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
-import androidx.camera.video.VideoRecordEvent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,110 +42,96 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.core.util.Consumer
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rstm.model.SensorData
 import com.example.rstm.ui.screens.LocationScreen
 import com.example.rstm.viewModels.ImplementVM
 import com.google.android.gms.location.FusedLocationProviderClient
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImplementScreen(
-    viewModel: ImplementVM,
-    Modifier: Modifier
-) {
+fun ImplementScreen(viewModel: ImplementVM, modifier: Modifier) {
     val context = LocalContext.current
     viewModel.getRepository().initializeUriList(context)
 
-    var lensFacing = LENS_FACING_BACK
+    var lensFacing by remember { mutableStateOf(LENS_FACING_BACK) }
     val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraxSelector = remember { CameraSelector.Builder().requireLensFacing(lensFacing).build() }
 
-    val cameraxSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
     var recording by remember { mutableStateOf<PendingRecording?>(null) }
     var onRecording by remember { mutableStateOf<Recording?>(null) }
-    val recBuilder = Recorder.Builder()
-    val qualitySelector = QualitySelector.fromOrderedList(
-        listOf(Quality.FHD, Quality.HD, Quality.HIGHEST)
-    )
-    val sensorData = SensorData()
 
+    val recBuilder = Recorder.Builder()
+    val qualitySelector = QualitySelector.fromOrderedList(listOf(Quality.FHD, Quality.HD, Quality.HIGHEST))
     val recorder = recBuilder.setQualitySelector(qualitySelector).build()
     val videoCapture: VideoCapture<Recorder> = VideoCapture.withOutput(recorder)
 
-    LaunchedEffect(lensFacing) {
-        viewModel.fetchCameraProvider(
-            context = context,
-            lifecycleOwner,
-            cameraxSelector,
-            videoCapture
-        )
-    }
-    val scope = rememberCoroutineScope()
+    val sensorData = remember { SensorData() }
+    val coroutineScope = rememberCoroutineScope()
     val scaffoldState = rememberBottomSheetScaffoldState()
-
     val executor = Executors.newCachedThreadPool()
-    var captureListener : Consumer<VideoRecordEvent>
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(500)
-            viewModel.getRepository().appendSensorDataToCSV(context, sensorData)
-        }
+    // Launch Camera Provider Setup
+    LaunchedEffect(lensFacing) {
+        viewModel.fetchCameraProvider(context, lifecycleOwner, cameraxSelector, videoCapture)
     }
+
     LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                while (true) {
-                    async {
-                        val result = viewModel.captureVideo(videoCapture, context)
+        val buffer = mutableListOf<SensorData>()
 
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "starting", Toast.LENGTH_SHORT).show()
-                        }
+        coroutineScope.launch(Dispatchers.IO) {
+            while (true) {
+                buffer.add(sensorData.copy()) // Copy sensor data to prevent modification
 
-                        captureListener = result.second
-                        recording = result.first
-                        onRecording = recording?.start(
-                            executor,
-                            captureListener
-                        )
-
-                        delay(10000)
-
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "stopping", Toast.LENGTH_SHORT).show()
-                        }
-
-                        onRecording?.stop()
-
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "stopped", Toast.LENGTH_SHORT).show()
-                        }
-
-                        delay(1000)
-                    }.await()
+                if (buffer.size >= 100) { // Adjust based on your needs
+                    viewModel.getRepository().appendSensorDataToCSV(context, buffer)
+                    buffer.clear() // Clear buffer after writing
                 }
-            } catch (e: Exception) {
-                Log.e("CameraPreviewScreen", "Error starting video recording", e)
+
+                delay(20) // Sample every 10 ms
             }
         }
     }
 
 
+    // Video Recording Management
+    LaunchedEffect(Unit) {
+        coroutineScope.launch(Dispatchers.Main) {
+            try {
+                while (isActive) {
+                    val result = viewModel.captureVideo(videoCapture, context)
+                    val captureListener = result.second
+                    recording = result.first
+                    onRecording = recording?.start(executor, captureListener)
+
+                    delay(6000) // Ensure it records fully
+
+                    onRecording?.stop()
+                    delay(40)
+                }
+            } catch (e: Exception) {
+                Log.e("CameraPreviewScreen", "Error in video recording", e)
+            }
+        }
+    }
+
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetPeekHeight = 0.dp,
         sheetContent = {
-            SensorSheetContent2C(data = sensorData, sensorManager = viewModel.getSensorManager(), fusedLocationClient = viewModel.getFusedLocation() , modifier = Modifier)
+            SensorSheetContent2C(
+                data = sensorData,
+                sensorManager = viewModel.getSensorManager(),
+                fusedLocationClient = viewModel.getFusedLocation(),
+                modifier = Modifier
+            )
         }
     ) { padding ->
         Box(
@@ -153,23 +139,18 @@ fun ImplementScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            Column{
+            Column {
                 IconButton(
                     onClick = {
-                        lensFacing =
-                            if (lensFacing == LENS_FACING_BACK) {
-                                LENS_FACING_FRONT
-                            } else LENS_FACING_BACK
+                        lensFacing = if (lensFacing == LENS_FACING_BACK) LENS_FACING_FRONT else LENS_FACING_BACK
                     },
                     modifier = Modifier.offset(16.dp, 16.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Refresh,
-                        contentDescription = "Switch camera"
-                    )
+                    Icon(imageVector = Icons.Rounded.Refresh, contentDescription = "Switch camera")
                 }
                 Spacer(modifier = Modifier.size(20.dp))
             }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -179,41 +160,32 @@ fun ImplementScreen(
             ) {
                 IconButton(
                     onClick = {
-                        scope.launch {
+                        coroutineScope.launch {
                             scaffoldState.bottomSheetState.expand()
                         }
                     }
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Open gallery"
-                    )
+                    Icon(imageVector = Icons.Default.Search, contentDescription = "Open gallery")
                 }
+
                 IconButton(
                     onClick = {
-                        scope.launch {
-                            onRecording?.stop() // Stop the current recording
+                        coroutineScope.launch(Dispatchers.IO) {
+                            onRecording?.stop()
+                            delay(100)
 
-                            delay(1000) // Small delay to ensure stop completes
-
-                            // Add the last recorded video to the list (handled in the captureListener already)
                             val result = viewModel.captureVideo(videoCapture, context)
-                            captureListener = result.second
+                            val captureListener = result.second
                             recording = result.first
-                            viewModel.getRepository().saveUriListAsCSV(context)
+
+                            viewModel.getRepository().saveLastTwoVideosAndCSV(context)
                             viewModel.getRepository().saveToDatabase(context)
-                            // Start a new buffered recording
-                            onRecording = recording?.start(
-                                executor,
-                                captureListener
-                            )
+
+                            onRecording = recording?.start(executor, captureListener)
                         }
                     }
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Record Last 30"
-                    )
+                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Record Last 30")
                 }
             }
         }
@@ -230,19 +202,15 @@ fun SensorSheetContent2C(data: SensorData,sensorManager: SensorManager, fusedLoc
     fun changeAccData(x: Float, y: Float, z: Float) {
         sensorDataIMP.accelerometerData = Triple(x, y, z)
     }
-
     fun changeMagData(x: Float, y: Float, z: Float) {
         sensorDataIMP.magneticData = Triple(x, y, z)
     }
-
     fun changeLightData(light: Float) {
         sensorDataIMP.lightData = light
     }
     fun changeLocationData(location: android.location.Location) {
         sensorDataIMP.locationData = location
     }
-
-
 
     GyroscopeScreen(modifier = modifier, sensorManager = sensorManager, function = ::changeGyroData)
     AccelerometerScreen(modifier = modifier, sensorManager, ::changeAccData)

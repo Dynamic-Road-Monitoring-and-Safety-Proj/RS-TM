@@ -62,7 +62,6 @@ class ImplementVM(
             cameraProvider.bindToLifecycle(lifecycleOwner, cameraxSelector, videoCapture)
         }
     }
-
     private fun findVideoUriByName(context: Context, fileName: String): Uri? {
         val projection = arrayOf(MediaStore.Video.Media._ID)
         val selection = "${MediaStore.Video.Media.DISPLAY_NAME} = ?"
@@ -80,9 +79,8 @@ class ImplementVM(
     }
 
     // support functions for capture video function
-    private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>) : Int {
-        val isDeleted = 0
-        if (uriList.isNotEmpty()) {
+    private fun deleteOldestVideo(context: Context, uriList: MutableList<Uri>, maxVideos: Int = 4): Int {
+        if (uriList.size > maxVideos) {  // Keep at least `maxVideos` videos
             val oldestUri = uriList[0]
             val deleted = context.contentResolver.delete(oldestUri, null, null)
 
@@ -95,8 +93,9 @@ class ImplementVM(
                 return 0
             }
         }
-        return isDeleted
+        return 0  // No deletion needed
     }
+
     private fun renameVideos(context: Context, uriList: MutableList<Uri>) {
         for (i in uriList.indices) {
             val oldUri = uriList[i]
@@ -118,39 +117,40 @@ class ImplementVM(
             }
         }
     }
+
     @SuppressLint("MissingPermission")
     fun captureVideo(
         videoCapture: VideoCapture<Recorder>,
         context: Context
-    ): Pair<PendingRecording, androidx.core.util.Consumer<VideoRecordEvent>> {
+    ): Pair<PendingRecording, Consumer<VideoRecordEvent>> {
 
-        var name: String = "0.mp4"
+        val bufferSize = 5  // Keep last 5 videos
+        val uriList: MutableList<Uri>? = implementRepo.getUriList()
 
-        val uriList : MutableList<Uri>? = implementRepo.getUriList()
-
-        uriList?.size?.let {
-            if (it >= 6) {
-                // Circular buffer: when there are 6 videos, delete the oldest and rename the others
-                val isDeleted = deleteOldestVideo(context, uriList )
-                if(isDeleted == 1){
-                    renameVideos(context, uriList)  // Renames from 0.mp4 to 4.mp4
-                    implementRepo.updateUriList(uriList)
-                }
-                name = "5.mp4"  // New video will be named "5.mp4"
-            } else {
-                // If the list size is less than 6, name videos sequentially from "0.mp4" to "4.mp4"
-                name = "${uriList.size}.mp4"
-            }
+        // Delete oldest clip if buffer is full
+        if (uriList != null && uriList.size >= bufferSize) {
+            val oldestUri = uriList.removeAt(0)  // Remove first (oldest) entry
+            context.contentResolver.delete(oldestUri, null, null)
+            Log.d("CameraScreen", "Deleted oldest video: $oldestUri")
         }
 
-        val existingUri = findVideoUriByName(context, name)
+        // Rename existing videos to shift them down (4.mp4 → 3.mp4, etc.)
+        if (uriList != null) {
+            renameVideos(context, uriList)
+        }
+
+        // Newest clip should always be saved as "5.mp4"
+        val fileName = "5.mp4"
+
+        // Delete existing 5.mp4 (to avoid duplicates)
+        val existingUri = findVideoUriByName(context, fileName)
         if (existingUri != null) {
-            context.contentResolver.delete(existingUri, null, null)  // Delete existing file
-            Log.d("CameraScreen", "Deleted existing video: $name")
+            context.contentResolver.delete(existingUri, null, null)
+            Log.d("CameraScreen", "Deleted existing video: $fileName")
         }
 
         val contentValues = ContentValues().apply {
-            put(MediaStore.Video.Media.DISPLAY_NAME, name)
+            put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
         }
 
         val mediaStoreOutput = MediaStoreOutputOptions.Builder(
@@ -167,27 +167,12 @@ class ImplementVM(
                 }
                 is VideoRecordEvent.Finalize -> {
                     if (event.error == VideoRecordEvent.Finalize.ERROR_NONE) {
-                        Log.d(
-                            "CameraScreen",
-                            "Video recording succeeded: ${event.outputResults.outputUri}"
-                        )
-
-                        CoroutineScope(Dispatchers.Main).launch {
-                            Toast.makeText(
-                                context,
-                                "URI is ${event.outputResults.outputUri}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-
                         val videoUri = event.outputResults.outputUri
-                        // Now add this new video to the list
-                        implementRepo.addUri(videoUri)
+                        implementRepo.addUri(videoUri)  // Store new video URI
                     } else {
                         Log.e("CameraScreen", "Video recording failed: ${event.cause}")
                     }
                 }
-
                 else -> {
                     // Handle other events if needed
                 }
@@ -199,6 +184,8 @@ class ImplementVM(
             .withAudioEnabled()
         return Pair(recording, captureListener)
     }
+
+
     fun getSensorManager() : SensorManager{
         return sensorManager
     }
