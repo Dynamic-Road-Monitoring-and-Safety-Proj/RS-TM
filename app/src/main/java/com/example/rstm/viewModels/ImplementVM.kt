@@ -139,13 +139,11 @@ class ImplementVM(
                 }
             }
         }
-
         val recording = videoCapture.output
             .prepareRecording(context, mediaStoreOutput)
             .withAudioEnabled()
         return Pair(recording, captureListener)
     }
-
 
     fun getSensorManager() : SensorManager{
         return sensorManager

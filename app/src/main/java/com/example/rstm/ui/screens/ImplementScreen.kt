@@ -202,9 +202,6 @@ fun SensorSheetContent2C(data: SensorData,sensorManager: SensorManager, fusedLoc
     fun changeAccData(x: Float, y: Float, z: Float) {
         sensorDataIMP.accelerometerData = Triple(x, y, z)
     }
-    fun changeMagData(x: Float, y: Float, z: Float) {
-        sensorDataIMP.magneticData = Triple(x, y, z)
-    }
     fun changeLightData(light: Float) {
         sensorDataIMP.lightData = light
     }
