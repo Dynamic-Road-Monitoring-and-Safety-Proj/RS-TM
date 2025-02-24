@@ -87,15 +87,15 @@ fun ImplementScreen(viewModel: ImplementVM, modifier: Modifier) {
         val buffer = mutableListOf<SensorData>()
 
         coroutineScope.launch(Dispatchers.IO) {
-            while (isActive) {
+            while (true) {
                 buffer.add(sensorData.copy()) // Copy sensor data to prevent modification
 
-                if (buffer.size >= 50) { // Adjust based on your needs
+                if (buffer.size >= 100) { // Adjust based on your needs
                     viewModel.getRepository().appendSensorDataToCSV(context, buffer)
                     buffer.clear() // Clear buffer after writing
                 }
 
-                delay(10) // Sample every 10 ms
+                delay(20) // Sample every 10 ms
             }
         }
     }

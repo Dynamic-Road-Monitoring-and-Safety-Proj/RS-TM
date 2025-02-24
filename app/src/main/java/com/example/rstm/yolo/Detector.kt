@@ -45,8 +45,11 @@ class Detector(
         options.numThreads = 4
         interpreter = Interpreter(model, options)
 
-        val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
-        val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
+//        val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
+//        val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
+
+        val inputShape = intArrayOf(1, 640, 640, 3)
+        val outputShape = intArrayOf(1, 8, 8400)
 
         tensorWidth = inputShape[1]
         tensorHeight = inputShape[2]

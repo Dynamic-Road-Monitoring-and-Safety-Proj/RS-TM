@@ -62,7 +62,6 @@ class ImplementVM(
             cameraProvider.bindToLifecycle(lifecycleOwner, cameraxSelector, videoCapture)
         }
     }
-
     private fun findVideoUriByName(context: Context, fileName: String): Uri? {
         val projection = arrayOf(MediaStore.Video.Media._ID)
         val selection = "${MediaStore.Video.Media.DISPLAY_NAME} = ?"
