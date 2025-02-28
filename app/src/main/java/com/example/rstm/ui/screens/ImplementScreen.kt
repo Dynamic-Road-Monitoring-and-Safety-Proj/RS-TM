@@ -95,7 +95,7 @@ fun ImplementScreen(viewModel: ImplementVM, modifier: Modifier) {
                     buffer.clear() // Clear buffer after writing
                 }
 
-                delay(20) // Sample every 10 ms
+                delay(200) // Sample every 10 ms
             }
         }
     }
