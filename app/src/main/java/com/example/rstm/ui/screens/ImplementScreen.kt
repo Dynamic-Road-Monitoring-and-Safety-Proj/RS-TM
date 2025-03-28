@@ -95,7 +95,7 @@ fun ImplementScreen(viewModel: ImplementVM, modifier: Modifier) {
                     buffer.clear() // Clear buffer after writing
                 }
 
-                delay(200) // Sample every 10 ms
+                delay(50) // Sample every 10 ms
             }
         }
     }
@@ -103,7 +103,7 @@ fun ImplementScreen(viewModel: ImplementVM, modifier: Modifier) {
 
     // Video Recording Management
     LaunchedEffect(Unit) {
-        coroutineScope.launch(Dispatchers.Main) {
+        coroutineScope.launch(Dispatchers.Default) {
             try {
                 while (isActive) {
                     val result = viewModel.captureVideo(videoCapture, context)

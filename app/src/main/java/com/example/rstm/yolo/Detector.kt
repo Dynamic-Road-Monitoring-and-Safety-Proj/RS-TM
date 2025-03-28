@@ -3,7 +3,6 @@ package com.example.rstm.yolo
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
-import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
@@ -39,17 +38,17 @@ class Detector(
 
     fun setup() {
         // Change this line - use only the filename instead of full path
-        val model = FileUtil.loadMappedFile(context, "model.tflite")  // Just the filename
+        val model = FileUtil.loadMappedFile(context, "model_utensil.tflite")  // Just the filename
 
         val options = Interpreter.Options()
         options.numThreads = 4
         interpreter = Interpreter(model, options)
 
-//        val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
-//        val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
+        val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
+        val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
 
-        val inputShape = intArrayOf(1, 640, 640, 3)
-        val outputShape = intArrayOf(1, 8, 8400)
+//        val inputShape = intArrayOf(1, 320, 320, 3)
+//        val outputShape = intArrayOf(1, 10, 4)
 
         tensorWidth = inputShape[1]
         tensorHeight = inputShape[2]
