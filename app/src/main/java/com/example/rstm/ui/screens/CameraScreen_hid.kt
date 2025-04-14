@@ -92,7 +92,6 @@ private fun initializeUriList(context: Context, uriList: MutableList<Uri>) {
             Log.d("InitializeUriList", "Added existing video: $fileName")
         }
     }
-
     Log.d("InitializeUriList", "URI list initialized with ${uriList.size} items.")
 }
 
@@ -424,7 +423,6 @@ private fun captureVideo(
     val recording = videoCapture.output
         .prepareRecording(context, mediaStoreOutput)
         .withAudioEnabled()
-
     return Pair(recording, captureListener)
 }
 

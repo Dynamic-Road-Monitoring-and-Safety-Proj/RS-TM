@@ -57,7 +57,6 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.example.rstm.roomImplementation.AppDatabase
 import com.example.rstm.ui.screens.YoloDetectionRoute
-import com.example.rstm.ui.screens.YoloFragmentScreen
 import java.sql.Timestamp
 
 
