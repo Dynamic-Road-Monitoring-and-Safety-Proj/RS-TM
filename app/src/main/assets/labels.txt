@@ -1,1 +1,13 @@
-1
+Lorry back
+Lorry front
+bike back
+bike front
+bus back
+bus front
+car back
+car front
+number plate
+three wheeler back
+three wheeler front
+van back
+van front

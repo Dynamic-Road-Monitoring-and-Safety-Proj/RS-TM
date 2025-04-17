@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
 import android.util.Log
+import com.example.rstm.Constants.MODEL_PATH
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
@@ -16,6 +17,7 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
+import androidx.core.graphics.scale
 
 class Detector(
     private val context: Context,
@@ -39,17 +41,17 @@ class Detector(
 
     fun setup() {
         // Change this line - use only the filename instead of full path
-        val model = FileUtil.loadMappedFile(context, "model.tflite")  // Just the filename
+        val model = FileUtil.loadMappedFile(context, MODEL_PATH)  // Just the filename
 
         val options = Interpreter.Options()
         options.numThreads = 4
         interpreter = Interpreter(model, options)
 
-//        val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
-//        val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
+        val inputShape = interpreter?.getInputTensor(0)?.shape() ?: return
+        val outputShape = interpreter?.getOutputTensor(0)?.shape() ?: return
 
-        val inputShape = intArrayOf(1, 640, 640, 3)
-        val outputShape = intArrayOf(1, 8, 8400)
+//        val inputShape = intArrayOf(1, 320, 320, 3)
+//        val outputShape = intArrayOf(1, 10, 4)
 
         tensorWidth = inputShape[1]
         tensorHeight = inputShape[2]
@@ -80,17 +82,25 @@ class Detector(
 
     fun detect(frame: Bitmap) {
         interpreter ?: return
-        if (tensorWidth == 0) return
-        if (tensorHeight == 0) return
-        if (numChannel == 0) return
-        if (numElements == 0) return
+        if (tensorWidth == 0 || tensorHeight == 0) {
+            Log.e("Detector", "Invalid tensor dimensions: $tensorWidth x $tensorHeight")
+            return
+        }
 
         var inferenceTime = SystemClock.uptimeMillis()
 
-        val resizedBitmap = Bitmap.createScaledBitmap(frame, tensorWidth, tensorHeight, false)
+        // Log the original frame size
+        Log.d("Detector", "Original frame size: ${frame.width} x ${frame.height}")
+
+        // Resize to the exact dimensions expected by the model
+        val resizedBitmap = frame.scale(tensorWidth, tensorHeight, false)
+
+        // Log the resized dimensions
+        Log.d("Detector", "Resized to: ${resizedBitmap.width} x ${resizedBitmap.height}")
 
         val tensorImage = TensorImage(DataType.FLOAT32)
         tensorImage.load(resizedBitmap)
+
         val processedImage = imageProcessor.process(tensorImage)
         val imageBuffer = processedImage.buffer
 

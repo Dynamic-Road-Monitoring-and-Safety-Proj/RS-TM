@@ -1,59 +1,3 @@
-//import android.bluetooth.BluetoothDevice
-//import android.util.Log
-//import androidx.compose.foundation.layout.Column
-//import androidx.compose.foundation.layout.Spacer
-//import androidx.compose.foundation.layout.fillMaxSize
-//import androidx.compose.foundation.layout.height
-//import androidx.compose.foundation.layout.padding
-//import androidx.compose.material3.Button
-//import androidx.compose.material3.MaterialTheme
-//import androidx.compose.material3.Text
-//import androidx.compose.runtime.Composable
-//import androidx.compose.runtime.mutableStateOf
-//import androidx.compose.runtime.remember
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.unit.dp
-//import androidx.compose.runtime.getValue
-//import androidx.compose.runtime.setValue
-//
-//@Composable
-//fun BLEScreen(
-//    receivedData: String,
-//    startScan: (BluetoothDevice) -> Unit
-//) {
-//    var isScanning by remember { mutableStateOf(false) }
-//
-//    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-//        Text(
-//            text = "BLE Data",
-//            style = MaterialTheme.typography.headlineMedium,
-//            modifier = Modifier.padding(bottom = 16.dp)
-//        )
-//
-//        Button(onClick = {
-//            if (!isScanning) {
-//                startScan {
-//                    device ->
-//                    // This block will be executed with a BluetoothDevice object
-//                    Log.d("BLE", "Device found: ${device.name} (${device.address})")
-//                }
-//            }
-//            isScanning = true
-//        }) {
-//            Text(text = if (isScanning) "Scanning..." else "Start Scanning")
-//        }
-//
-//
-//        Spacer(modifier = Modifier.height(16.dp))
-//
-//        Text(
-//            text = "Received Data: $receivedData",
-//            style = MaterialTheme.typography.bodyMedium,
-//            modifier = Modifier.padding(top = 8.dp)
-//        )
-//    }
-//}
-
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -135,36 +79,63 @@ fun DataScreen(
 ) {
     var isReceiving by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    val receivedDataList = remember { mutableStateListOf<String>() }
+    val bluetoothSocket = remember {
+        mutableStateOf<BluetoothSocket?>(null)
+    }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            try {
+                val socket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
+                socket.connect()
+                bluetoothSocket.value = socket
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     Column(Modifier.padding(16.dp)) {
         Text("Connected to: ${device.name}", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onDisconnect) {
+
+        Button(onClick = {
+            bluetoothSocket.value?.close()
+            onDisconnect()
+        }) {
             Text("Disconnect")
         }
+
         Spacer(Modifier.height(16.dp))
-        if (isReceiving) {
-            Text("Receiving data...")
-        } else {
-            Button(onClick = {
+
+        Button(
+            onClick = {
                 isReceiving = true
                 coroutineScope.launch {
-                    receiveData(device, onReceiveData)
+                    receiveData(bluetoothSocket.value, onReceiveData = {
+                        receivedDataList.add(it)
+                    })
                     isReceiving = false
                 }
-            }) {
-                Text("Request Data")
+            },
+            enabled = bluetoothSocket.value != null && !isReceiving
+        ) {
+            Text(if (isReceiving) "Receiving..." else "Request Data")
+        }
+
+        Spacer(Modifier.height(16.dp))
+        LazyColumn(modifier = Modifier.fillMaxHeight()) {
+            items(receivedDataList.size) { index ->
+                Text(text = receivedDataList[index])
             }
         }
     }
 }
 
-@SuppressLint("MissingPermission")
-suspend fun receiveData(device: BluetoothDevice, onReceiveData: (String) -> Unit) {
+suspend fun receiveData(socket: BluetoothSocket?, onReceiveData: (String) -> Unit) {
     withContext(Dispatchers.IO) {
-        val socket: BluetoothSocket? = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
         try {
-            socket?.connect()
             val inputStream: InputStream = socket?.inputStream ?: return@withContext
             val outputStream: OutputStream = socket.outputStream
             outputStream.write("REQUEST_DATA".toByteArray())
@@ -176,8 +147,6 @@ suspend fun receiveData(device: BluetoothDevice, onReceiveData: (String) -> Unit
             onReceiveData(receivedString)
         } catch (e: IOException) {
             e.printStackTrace()
-        } finally {
-            socket?.close()
         }
     }
 }

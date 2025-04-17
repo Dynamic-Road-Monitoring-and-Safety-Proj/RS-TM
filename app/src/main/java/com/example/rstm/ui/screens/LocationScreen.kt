@@ -19,7 +19,6 @@ fun LocationScreen(
     fusedLocationClient: FusedLocationProviderClient,
     function: (Location) -> Unit
 ) {
-    val context = LocalContext.current
     var currentLocation by remember { mutableStateOf<Location?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val lifecycleOwner = LocalLifecycleOwner.current

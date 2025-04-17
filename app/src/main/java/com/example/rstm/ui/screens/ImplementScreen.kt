@@ -95,7 +95,7 @@ fun ImplementScreen(viewModel: ImplementVM, modifier: Modifier) {
                     buffer.clear() // Clear buffer after writing
                 }
 
-                delay(20) // Sample every 10 ms
+                delay(50) // Sample every 10 ms
             }
         }
     }
@@ -103,7 +103,7 @@ fun ImplementScreen(viewModel: ImplementVM, modifier: Modifier) {
 
     // Video Recording Management
     LaunchedEffect(Unit) {
-        coroutineScope.launch(Dispatchers.Main) {
+        coroutineScope.launch(Dispatchers.Default) {
             try {
                 while (isActive) {
                     val result = viewModel.captureVideo(videoCapture, context)
@@ -201,9 +201,6 @@ fun SensorSheetContent2C(data: SensorData,sensorManager: SensorManager, fusedLoc
     }
     fun changeAccData(x: Float, y: Float, z: Float) {
         sensorDataIMP.accelerometerData = Triple(x, y, z)
-    }
-    fun changeMagData(x: Float, y: Float, z: Float) {
-        sensorDataIMP.magneticData = Triple(x, y, z)
     }
     fun changeLightData(light: Float) {
         sensorDataIMP.lightData = light

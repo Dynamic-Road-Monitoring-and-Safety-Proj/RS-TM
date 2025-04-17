@@ -57,7 +57,6 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.example.rstm.roomImplementation.AppDatabase
 import com.example.rstm.ui.screens.YoloDetectionRoute
-import com.example.rstm.ui.screens.YoloFragmentScreen
 import java.sql.Timestamp
 
 
@@ -66,7 +65,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var sensorManager: SensorManager
     private lateinit var bleManager: BLEManager
-
 
     companion object{
         lateinit var appDatabase: AppDatabase
@@ -80,7 +78,8 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.CAMERA,
         Manifest.permission.RECORD_AUDIO,
         Manifest.permission.BLUETOOTH_SCAN,
-        Manifest.permission.BLUETOOTH_CONNECT
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.HIGH_SAMPLING_RATE_SENSORS
     )
 
     private val requestPermissionLauncher: ActivityResultLauncher<Array<String>> =
