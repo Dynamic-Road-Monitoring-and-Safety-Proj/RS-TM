@@ -77,7 +77,6 @@ fun DataScreen(
     onDisconnect: () -> Unit,
     onReceiveData: (String) -> Unit
 ) {
-    var isReceiving by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val receivedDataList = remember { mutableStateListOf<String>() }
     val bluetoothSocket = remember {
@@ -90,6 +89,15 @@ fun DataScreen(
                 val socket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
                 socket.connect()
                 bluetoothSocket.value = socket
+
+                // Start receiving immediately after connecting
+                coroutineScope.launch {
+                    receiveData(socket) { data ->
+                        receivedDataList.add(data)
+                        onReceiveData(data)
+                    }
+                }
+
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -108,23 +116,6 @@ fun DataScreen(
         }
 
         Spacer(Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                isReceiving = true
-                coroutineScope.launch {
-                    receiveData(bluetoothSocket.value, onReceiveData = {
-                        receivedDataList.add(it)
-                    })
-                    isReceiving = false
-                }
-            },
-            enabled = bluetoothSocket.value != null && !isReceiving
-        ) {
-            Text(if (isReceiving) "Receiving..." else "Request Data")
-        }
-
-        Spacer(Modifier.height(16.dp))
         LazyColumn(modifier = Modifier.fillMaxHeight()) {
             items(receivedDataList.size) { index ->
                 Text(text = receivedDataList[index])
@@ -133,20 +124,22 @@ fun DataScreen(
     }
 }
 
+
 suspend fun receiveData(socket: BluetoothSocket?, onReceiveData: (String) -> Unit) {
     withContext(Dispatchers.IO) {
         try {
             val inputStream: InputStream = socket?.inputStream ?: return@withContext
-            val outputStream: OutputStream = socket.outputStream
-            outputStream.write("REQUEST_DATA".toByteArray())
-
             val buffer = ByteArray(1024)
-            val bytesRead = inputStream.read(buffer)
-            val receivedString = String(buffer, 0, bytesRead)
 
-            onReceiveData(receivedString)
+            while (true) {
+                val bytesRead = inputStream.read(buffer)
+                if (bytesRead > 0) {
+                    val receivedString = String(buffer, 0, bytesRead)
+                    onReceiveData(receivedString)
+                }
+            }
         } catch (e: IOException) {
             e.printStackTrace()
         }
-    }
+    }x
 }
