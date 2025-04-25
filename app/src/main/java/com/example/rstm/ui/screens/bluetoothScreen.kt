@@ -4,18 +4,34 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.os.Environment
 import android.util.Log
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -60,9 +76,10 @@ fun BLEScreen() {
         }
     }
 }
+
 @Composable
-fun SaveButton(receivedDataList: List<String>) {
-    Button(onClick = {
+fun SaveButton(receivedDataList: List<String>, modifier: Modifier = Modifier) {
+    FloatingActionButton (modifier = modifier, onClick = {
         val file = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
             "bluetooth_data.csv"
@@ -100,6 +117,7 @@ fun DeviceList(paddingValues: PaddingValues, devices: List<BluetoothDevice>, onD
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun DataScreen(
@@ -110,9 +128,7 @@ fun DataScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val receivedDataList = remember { mutableStateListOf<String>() }
-    val bluetoothSocket = remember {
-        mutableStateOf<BluetoothSocket?>(null)
-    }
+    val bluetoothSocket = remember { mutableStateOf<BluetoothSocket?>(null) }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -121,10 +137,9 @@ fun DataScreen(
                 socket.connect()
                 bluetoothSocket.value = socket
 
-                // Start receiving immediately after connecting
                 coroutineScope.launch {
                     receiveData(socket) { data ->
-                        receivedDataList.add(data)
+                        receivedDataList.add(0, data) // add latest at top
                         onReceiveData(data)
                     }
                 }
@@ -135,26 +150,74 @@ fun DataScreen(
         }
     }
 
-    Column(Modifier.padding(top = 100.dp, start = 30.dp)) {
-        Text("Connected to: ${device.name}", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(16.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    listOf(Color(0xFF1E1E2F), Color(0xFF121212))
+                )
+            )
+    ) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            TopAppBar(
+                title = { Text("Connected: ${device.name}", color = Color.White) },
+                actions = {
+                    IconButton(onClick = {
+                        bluetoothSocket.value?.close()
+                        onDisconnect()
+                    }) {
+                        Icon(Icons.Rounded.Build, contentDescription = "Disconnect", tint = Color.Red)
+                    }
+                },
+            )
 
-        Row{
-            Button(onClick = {
-                bluetoothSocket.value?.close()
-                onDisconnect()
-            }) {
-                Text("Disconnect")
+            Spacer(Modifier.height(16.dp))
+            AnimatedSensorCard("Time, Gyro X, Gyro Y, Gyro Z, Accel X, Accel Y, Accel Z")
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 56.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(receivedDataList.size) { index ->
+                    val data = receivedDataList[index]
+                    AnimatedSensorCard(data = data)
+                }
             }
-            SaveButton(receivedDataList)
         }
 
-        Spacer(Modifier.height(16.dp))
-        LazyColumn(modifier = Modifier.fillMaxHeight()) {
-            items(receivedDataList.size) { index ->
-                Text(text = receivedDataList[index])
-            }
-        }
+        SaveButton(
+            receivedDataList,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        )
+    }
+}
+@Composable
+fun AnimatedSensorCard(data: String) {
+    val bgColor = remember { Color(0xFF2C2C3A) }
+    val animatedAlpha by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(700, easing = LinearOutSlowInEasing),
+        label = "fade-in"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(animatedAlpha),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Text(
+            text = data,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(16.dp),
+            color = Color.White
+        )
     }
 }
 
