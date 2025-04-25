@@ -1,3 +1,4 @@
+import android.R
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -9,11 +10,16 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,6 +39,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.*
@@ -62,17 +69,20 @@ fun BLEScreen() {
         topBar = { TopAppBar(title = { Text("Bluetooth ESP32") }) }
     ) { padding ->
 
-        if (connectedDevice.value == null) {
-            DeviceList(padding, devices) { device ->
-                connectedDevice.value = device
+        Column {
+            Spacer(modifier = Modifier.height(40.dp))
+            if (connectedDevice.value == null) {
+                DeviceList(padding, devices) { device ->
+                    connectedDevice.value = device
+                }
+            } else {
+                DataScreen(
+                    viewModel = viewModel,
+                    device = connectedDevice.value!!,
+                    onDisconnect = { connectedDevice.value = null },
+                    onReceiveData = { data -> receivedData.value = data }
+                )
             }
-        } else {
-            DataScreen(
-                viewModel = viewModel,
-                device = connectedDevice.value!!,
-                onDisconnect = { connectedDevice.value = null },
-                onReceiveData = { data -> receivedData.value = data }
-            )
         }
     }
 }
@@ -96,24 +106,7 @@ fun SaveButton(receivedDataList: List<String>, modifier: Modifier = Modifier) {
             Log.e("Save", "Failed: ${e.message}")
         }
     }) {
-        Text("Save CSV")
-    }
-}
-
-@SuppressLint("MissingPermission")
-@Composable
-fun DeviceList(paddingValues: PaddingValues, devices: List<BluetoothDevice>, onDeviceSelected: (BluetoothDevice) -> Unit) {
-    LazyColumn {
-        items(devices.size) { index ->
-            val device = devices[index]
-            ListItem(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onDeviceSelected(device) },
-                headlineContent = { Text(device.name ?: "Unknown Device") },
-                supportingContent = { Text(device.address) }
-            )
-        }
+        Text("Save\n CSV", style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -159,21 +152,25 @@ fun DataScreen(
                 )
             )
     ) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(top=16.dp)) {
             TopAppBar(
-                title = { Text("Connected: ${device.name}", color = Color.White) },
+                title = { Text(modifier = Modifier.fillMaxWidth(),text ="Connected: ${device.name}", color = Color.White) },
                 actions = {
                     IconButton(onClick = {
                         bluetoothSocket.value?.close()
                         onDisconnect()
                     }) {
-                        Icon(Icons.Rounded.Build, contentDescription = "Disconnect", tint = Color.Red)
+                        Icon(Icons.Rounded.Close, contentDescription = "Disconnect", tint = Color.Red)
                     }
                 },
             )
 
             Spacer(Modifier.height(16.dp))
-            AnimatedSensorCard("Time, Gyro X, Gyro Y, Gyro Z, Accel X, Accel Y, Accel Z")
+            Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                AnimatedSensorCard("Time, Gyro X, Gyro Y, Gyro Z, Accel X, Accel Y, Accel Z")
+            }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -186,7 +183,6 @@ fun DataScreen(
                 }
             }
         }
-
         SaveButton(
             receivedDataList,
             modifier = Modifier
@@ -195,6 +191,71 @@ fun DataScreen(
         )
     }
 }
+@SuppressLint("MissingPermission")
+@Composable
+fun DeviceList(
+    paddingValues: PaddingValues,
+    devices: List<BluetoothDevice>,
+    onDeviceSelected: (BluetoothDevice) -> Unit
+) {
+    LazyColumn(
+        contentPadding = paddingValues,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        items(devices.size) { index ->
+            val device = devices[index]
+            DeviceCard(device = device, onClick = { onDeviceSelected(device) })
+        }
+    }
+}
+
+
+@Composable
+@androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
+fun DeviceCard(device: BluetoothDevice, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val cardColor = if (isSystemInDarkTheme()) Color(0xFF2E2E3A) else Color(0xFFF5F5F5)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 72.dp)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .background(if (isPressed) cardColor.copy(alpha = 0.9f) else cardColor),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        )  {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = "Bluetooth Device",
+                tint = if (device.name != null) Color(0xFF4CAF50) else Color.Gray,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = device.name ?: "Unknown Device",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = device.address,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun AnimatedSensorCard(data: String) {
     val bgColor = remember { Color(0xFF2C2C3A) }
@@ -214,13 +275,16 @@ fun AnimatedSensorCard(data: String) {
     ) {
         Text(
             text = data,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(16.dp),
-            color = Color.White
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
-
 
 suspend fun receiveData(socket: BluetoothSocket?, onReceiveData: (String) -> Unit) {
     withContext(Dispatchers.IO) {
