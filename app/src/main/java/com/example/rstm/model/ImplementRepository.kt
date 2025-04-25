@@ -206,7 +206,8 @@ class ImplementRepository() {
                 val uriList = _uriList.value ?: emptyList()
                 if (uriList.isEmpty()) {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "No videos available to save", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "No videos available to save", Toast.LENGTH_SHORT)
+                            .show()
                     }
                     Log.e("SaveToDCIM", "No videos available to save")
                     return@withContext
@@ -227,7 +228,8 @@ class ImplementRepository() {
                         put(MediaStore.Video.Media.RELATIVE_PATH, dcimDir)
                     }
 
-                    val newUri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    val newUri =
+                        resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
                     if (newUri == null) {
                         Log.e("SaveToDCIM", "Failed to create new file for $fileName")
                         continue
@@ -249,7 +251,8 @@ class ImplementRepository() {
 
                 }
 
-                val csvUri = resolver.insert(MediaStore.Files.getContentUri("external"), csvContentValues)
+                val csvUri =
+                    resolver.insert(MediaStore.Files.getContentUri("external"), csvContentValues)
                 if (csvUri != null) {
                     resolver.openOutputStream(csvUri)?.use { outputStream ->
                         outputStream.write(csvBuilder.toString().toByteArray())
@@ -262,20 +265,19 @@ class ImplementRepository() {
 
                 // Show success message on main thread
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Videos & CSV saved successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Videos & CSV saved successfully!", Toast.LENGTH_SHORT)
+                        .show()
                 }
 
             } catch (e: Exception) {
                 Log.e("SaveToDCIM", "Error saving files: ${e.message}", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Error saving files: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Error saving files: ${e.message}", Toast.LENGTH_LONG)
+                        .show()
                 }
             }
         }
     }
-
-
-
 
     fun saveToDatabase(context: Context) {
         val csvFileName = "video_uri.csv"
@@ -286,8 +288,6 @@ class ImplementRepository() {
             videoUriFile = filePath.absolutePath,  // Save the absolute path instead of just the file name
             csvUri = state.value?.csvUri
         )
-
-
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
