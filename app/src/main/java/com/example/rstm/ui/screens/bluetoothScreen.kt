@@ -2,6 +2,8 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.os.Environment
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,17 +16,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.*
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.OutputStream
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun BLEScreen() {
+    val viewModel: BluetoothViewModel = viewModel()
     val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     val devices = remember { mutableStateListOf<BluetoothDevice>() }
     val connectedDevice = remember { mutableStateOf<BluetoothDevice?>(null) }
@@ -39,17 +45,41 @@ fun BLEScreen() {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Bluetooth ESP32") }) }
     ) { padding ->
+
         if (connectedDevice.value == null) {
-            DeviceList(padding,devices) { device ->
+            DeviceList(padding, devices) { device ->
                 connectedDevice.value = device
             }
         } else {
             DataScreen(
+                viewModel = viewModel,
                 device = connectedDevice.value!!,
                 onDisconnect = { connectedDevice.value = null },
                 onReceiveData = { data -> receivedData.value = data }
             )
         }
+    }
+}
+@Composable
+fun SaveButton(receivedDataList: List<String>) {
+    Button(onClick = {
+        val file = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+            "bluetooth_data.csv"
+        )
+        try {
+            FileOutputStream(file, false).use { fos ->
+                receivedDataList.forEach { line ->
+                    fos.write((line + "\n").toByteArray())
+                }
+            }
+            Log.d("Save", "CSV saved!")
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Log.e("Save", "Failed: ${e.message}")
+        }
+    }) {
+        Text("Save CSV")
     }
 }
 
@@ -75,7 +105,8 @@ fun DeviceList(paddingValues: PaddingValues, devices: List<BluetoothDevice>, onD
 fun DataScreen(
     device: BluetoothDevice,
     onDisconnect: () -> Unit,
-    onReceiveData: (String) -> Unit
+    onReceiveData: (String) -> Unit,
+    viewModel: BluetoothViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
     val receivedDataList = remember { mutableStateListOf<String>() }
@@ -104,15 +135,18 @@ fun DataScreen(
         }
     }
 
-    Column(Modifier.padding(16.dp)) {
+    Column(Modifier.padding(top = 100.dp, start = 30.dp)) {
         Text("Connected to: ${device.name}", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(16.dp))
 
-        Button(onClick = {
-            bluetoothSocket.value?.close()
-            onDisconnect()
-        }) {
-            Text("Disconnect")
+        Row{
+            Button(onClick = {
+                bluetoothSocket.value?.close()
+                onDisconnect()
+            }) {
+                Text("Disconnect")
+            }
+            SaveButton(receivedDataList)
         }
 
         Spacer(Modifier.height(16.dp))
@@ -141,5 +175,5 @@ suspend fun receiveData(socket: BluetoothSocket?, onReceiveData: (String) -> Uni
         } catch (e: IOException) {
             e.printStackTrace()
         }
-    }x
+    }
 }
