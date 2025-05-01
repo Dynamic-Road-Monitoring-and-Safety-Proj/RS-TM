@@ -95,7 +95,7 @@ fun SaveButton(receivedDataList: List<String>, modifier: Modifier = Modifier) {
             "bluetooth_data.csv"
         )
         try {
-            FileOutputStream(file, false).use { fos ->
+            FileOutputStream(file, true).use { fos ->
                 receivedDataList.forEach { line ->
                     fos.write((line + "\n").toByteArray())
                 }
@@ -169,7 +169,7 @@ fun DataScreen(
 
             Spacer(Modifier.height(16.dp))
             Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                AnimatedSensorCard("Time, Gyro X, Gyro Y, Gyro Z, Accel X, Accel Y, Accel Z")
+                AnimatedSensorCard("Timestamp(ms),PM1.0,PM2.5,PM10,CO2,TVOC,Temperature,Humidity,CH2O,CO,O3,NO2")
             }
             LazyColumn(
                 modifier = Modifier

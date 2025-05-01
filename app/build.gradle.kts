@@ -93,8 +93,7 @@ dependencies {
 
     implementation (libs.androidx.room.ktx)
     implementation (libs.gson)
-    implementation("org.tensorflow:tensorflow-lite:2.14.0")
-    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
-
-
+    implementation(libs.tensorflow.lite)
+    implementation(libs.tensorflow.lite.support)
+//    implementation (libs.play.services.tflite)
 }

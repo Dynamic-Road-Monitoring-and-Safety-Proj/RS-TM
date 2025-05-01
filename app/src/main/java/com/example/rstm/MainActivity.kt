@@ -59,12 +59,15 @@ import com.example.rstm.roomImplementation.AppDatabase
 import com.example.rstm.ui.screens.YoloDetectionRoute
 import java.sql.Timestamp
 
+// In your activity or application class
+
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var sensorManager: SensorManager
     private lateinit var bleManager: BLEManager
+
 
     companion object{
         lateinit var appDatabase: AppDatabase
